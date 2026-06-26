@@ -13,13 +13,7 @@ interface WalletState {
   connecting: boolean;
 }
 
-export function useWallet(): WalletState {
-  const [address, setAddress] = useState<string | null>(() => {
-    const envAddr = import.meta.env.VITE_WALLET_ADDRESS as string | undefined;
-    return envAddr && envAddr.trim().length > 0 ? envAddr.trim() : null;
-  });
-  const [connecting, setConnecting] = useState(false);
-  const [signFn, setSignFn] = useState<((xdr: string) => Promise<string>) | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
