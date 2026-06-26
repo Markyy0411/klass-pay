@@ -33,59 +33,26 @@ export function useWallet(): WalletState {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  /* Freighter signTransaction wrapper */
+    /* Freighter signTransaction wrapper */
   const freighterSign = useCallback(async (xdr: string): Promise<string> => {
+    // Provide both the new and old network parameters to be perfectly safe
     const result = await freighterApi.signTransaction(xdr, {
+      network: 'TESTNET',
       networkPassphrase: 'Test SDF Network ; September 2015',
-    });
-    if (typeof result === 'string') return result;
-    if (typeof result === 'object' && result !== null && 'signedTxXdr' in result) {
-      return (result as { signedTxXdr: string }).signedTxXdr;
+    } as any);
+
+    if (typeof result === 'string') {
+      if (!result || result.includes('error')) throw new Error(result);
+      return result;
     }
-    throw new Error('Freighter returned an unexpected sign result');
+    
+    if (typeof result === 'object' && result !== null) {
+      if ('error' in result && (result as any).error) {
+        throw new Error((result as any).error);
+      }
+      if ('signedTxXdr' in result && typeof (result as any).signedTxXdr === 'string' && (result as any).signedTxXdr.length > 0) {
+        return (result as any).signedTxXdr;
+      }
+    }
+    throw new Error('Freighter returned an empty or invalid signature.');
   }, []);
-
-  /* Connect via Freighter */
-  const connect = useCallback(async () => {
-    if (address) return;
-    setConnecting(true);
-    try {
-      // Use the universally supported requestAccess method
-      const accessResponse = await freighterApi.requestAccess();
-      
-      let pubKey = '';
-      if (typeof accessResponse === 'string') {
-        pubKey = accessResponse;
-      } else if (typeof accessResponse === 'object' && accessResponse !== null) {
-        // Handle newer API responses
-        pubKey = (accessResponse as any).address || (accessResponse as any).publicKey || '';
-      }
-
-      if (!pubKey) {
-        throw new Error("Could not retrieve wallet address from Freighter. Make sure you approved the connection.");
-      }
-      
-      setAddress(pubKey);
-      setSignFn(() => freighterSign);
-    } catch (err) {
-      console.error('[KlassPay] Freighter connect failed:', err);
-      throw err;
-    } finally {
-      setConnecting(false);
-    }
-  }, [address, freighterSign]);
-
-  /* Auto-set sign function when address comes from env/IDE */
-  useEffect(() => {
-    if (address && !signFn) {
-      setSignFn(() => freighterSign);
-    }
-  }, [address, signFn, freighterSign]);
-
-  return {
-    address,
-    signXDR: signFn,
-    connect,
-    connecting,
-  };
-}
