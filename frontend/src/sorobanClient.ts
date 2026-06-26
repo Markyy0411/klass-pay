@@ -232,7 +232,7 @@ export async function invokeWrite(
   }
 
   const assembled = SorobanRpc.assembleTransaction(tx, simResult).build();
-  const xdrString = assembled.toXDR();
+   const xdrString = assembled.toXDR('base64');
 
   /* Sign */
   const signedXdr = await signXDR(xdrString);

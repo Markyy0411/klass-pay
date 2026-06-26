@@ -36,8 +36,8 @@ export function useWallet(): WalletState {
     /* Freighter signTransaction wrapper */
   const freighterSign = useCallback(async (xdr: string): Promise<string> => {
     // Provide both the new and old network parameters to be perfectly safe
-    const result = await freighterApi.signTransaction(xdr, {
-      network: 'TESTNET',
+        const result = await freighterApi.signTransaction(xdr, {
+      network: 'TESTNET', // <-- ADD THIS LINE
       networkPassphrase: 'Test SDF Network ; September 2015',
     } as any);
 
