@@ -13,7 +13,10 @@ interface WalletState {
   connecting: boolean;
 }
 
+export function useWallet(): WalletState {
   const [address, setAddress] = useState<string | null>(null);
+  const [signFn, setSignFn] = useState<((xdr: string) => Promise<string>) | null>(null);
+  const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
