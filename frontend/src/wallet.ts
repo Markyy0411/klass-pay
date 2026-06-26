@@ -36,7 +36,7 @@ export function useWallet(): WalletState {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  /* Freighter signTransaction wrapper */
+   /* Freighter signTransaction wrapper */
   const freighterSign = useCallback(async (xdr: string): Promise<string> => {
     const result = await freighterApi.signTransaction(xdr, {
       network: 'TESTNET',
@@ -50,7 +50,10 @@ export function useWallet(): WalletState {
     
     if (typeof result === 'object' && result !== null) {
       if ('error' in result && (result as any).error) {
-        throw new Error((result as any).error);
+        // FIX: Extract the actual message instead of printing [object Object]
+        const errObj = (result as any).error;
+        const msg = typeof errObj === 'string' ? errObj : (errObj.message || "Transaction declined");
+        throw new Error(msg);
       }
       if ('signedTxXdr' in result && typeof (result as any).signedTxXdr === 'string' && (result as any).signedTxXdr.length > 0) {
         return (result as any).signedTxXdr;
