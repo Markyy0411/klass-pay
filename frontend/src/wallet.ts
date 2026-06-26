@@ -38,7 +38,6 @@ export function useWallet(): WalletState {
 
   /* Freighter signTransaction wrapper */
   const freighterSign = useCallback(async (xdr: string): Promise<string> => {
-    // Vercel's version of Freighter requires BOTH of these network settings
     const result = await freighterApi.signTransaction(xdr, {
       network: 'TESTNET',
       networkPassphrase: 'Test SDF Network ; September 2015',
@@ -60,18 +59,35 @@ export function useWallet(): WalletState {
     throw new Error('Freighter returned an empty or invalid signature.');
   }, []);
 
-  /* Connect via Freighter */
+  /* Connect via Freighter (Supports BOTH new and old API versions) */
   const connect = useCallback(async () => {
     if (address) return;
     setConnecting(true);
     try {
-      const isAllowed = await freighterApi.isAllowed();
-      if (!isAllowed) {
-        await freighterApi.setAllowed();
+      let pubKey = '';
+      
+      if (typeof freighterApi.requestAccess === 'function') {
+        // New Freighter v6 standard
+        const result = await freighterApi.requestAccess();
+        if (typeof result === 'string') {
+          pubKey = result;
+        } else if (result && typeof result === 'object') {
+          if ((result as any).error) throw new Error((result as any).error);
+          pubKey = (result as any).address;
+        }
+      } else if (typeof (freighterApi as any).getPublicKey === 'function') {
+        // Fallback for older versions
+        const isAllowed = await freighterApi.isAllowed();
+        if (!isAllowed) await freighterApi.setAllowed();
+        pubKey = await (freighterApi as any).getPublicKey();
+      } else {
+        throw new Error('Freighter wallet API not found. Please install the extension.');
       }
-      const pubKey = await freighterApi.getPublicKey();
-      setAddress(pubKey);
-      setSignFn(() => freighterSign);
+
+      if (pubKey) {
+        setAddress(pubKey);
+        setSignFn(() => freighterSign);
+      }
     } catch (err) {
       console.error('[KlassPay] Freighter connect failed:', err);
       throw err;
