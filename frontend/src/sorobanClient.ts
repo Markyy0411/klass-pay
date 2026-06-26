@@ -1,6 +1,16 @@
+/**
+ * sorobanClient.ts
+ * Full Soroban RPC client for the KlassPay split_pay contract.
+ *
+ * Contract crate: contracts/split_pay
+ * Functions:
+ *   create(organizer: Address, amount: u32) — write
+ *   pay(payer: Address, amount: u32)        — write
+ *   get() -> BillInfo                       — read
+ */
 import {
   Contract,
-  SorobanRpc,
+  rpc as SorobanRpc, // <-- This is the fix! We alias the new rpc module to the old name
   TransactionBuilder,
   Networks,
   nativeToScVal,
