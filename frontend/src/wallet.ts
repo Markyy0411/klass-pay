@@ -27,15 +27,6 @@ export function useWallet(): WalletState {
       ) {
         setAddress(event.data.address);
       }
-
-      if (
-        event.data &&
-        typeof event.data === 'object' &&
-        event.data.type === 'soroban-ide:sign-response' &&
-        typeof event.data.signedXDR === 'string'
-      ) {
-        /* handled by the sign request promise — kept for potential future use */
-      }
     }
 
     window.addEventListener('message', handleMessage);
@@ -48,7 +39,7 @@ export function useWallet(): WalletState {
       networkPassphrase: 'Test SDF Network ; September 2015',
     });
     if (typeof result === 'string') return result;
-    if (typeof result === 'object' && 'signedTxXdr' in result) {
+    if (typeof result === 'object' && result !== null && 'signedTxXdr' in result) {
       return (result as { signedTxXdr: string }).signedTxXdr;
     }
     throw new Error('Freighter returned an unexpected sign result');
@@ -59,11 +50,21 @@ export function useWallet(): WalletState {
     if (address) return;
     setConnecting(true);
     try {
-      const isAllowed = await freighterApi.isAllowed();
-      if (!isAllowed) {
-        await freighterApi.setAllowed();
+      // Use the universally supported requestAccess method
+      const accessResponse = await freighterApi.requestAccess();
+      
+      let pubKey = '';
+      if (typeof accessResponse === 'string') {
+        pubKey = accessResponse;
+      } else if (typeof accessResponse === 'object' && accessResponse !== null) {
+        // Handle newer API responses
+        pubKey = (accessResponse as any).address || (accessResponse as any).publicKey || '';
       }
-      const pubKey = await freighterApi.getPublicKey();
+
+      if (!pubKey) {
+        throw new Error("Could not retrieve wallet address from Freighter. Make sure you approved the connection.");
+      }
+      
       setAddress(pubKey);
       setSignFn(() => freighterSign);
     } catch (err) {
@@ -77,19 +78,7 @@ export function useWallet(): WalletState {
   /* Auto-set sign function when address comes from env/IDE */
   useEffect(() => {
     if (address && !signFn) {
-      /* If the address was injected (not from Freighter), we still try to
-         use Freighter for signing if available. */
-      (async () => {
-        try {
-          const connected = await freighterApi.isConnected();
-          if (connected) {
-            setSignFn(() => freighterSign);
-          }
-        } catch {
-          /* Freighter not available — signXDR stays null.
-             Writes will fail but reads still work. */
-        }
-      })();
+      setSignFn(() => freighterSign);
     }
   }, [address, signFn, freighterSign]);
 
