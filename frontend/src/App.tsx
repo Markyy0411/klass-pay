@@ -21,6 +21,12 @@ export default function App() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
 
   // Fetch bill automatically if we have an ID and wallet
   useEffect(() => {
@@ -97,7 +103,7 @@ export default function App() {
   const copyShareLink = () => {
     const link = `${window.location.origin}/?bill=${currentBillId}`;
     navigator.clipboard.writeText(link);
-    alert('Share link copied to clipboard! Send this to your 10 users!');
+    showToast('Share link copied to clipboard! Send this to your users!');
   };
 
   const handleJoin = () => {
@@ -272,6 +278,24 @@ export default function App() {
       )}
 
       {error && <div className="msg msg--error">{error}</div>}
+      
+      {toastMsg && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          background: 'var(--success)',
+          color: 'white',
+          padding: '1rem 2rem',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          animation: 'slideIn 0.3s ease-out',
+          zIndex: 1000,
+          fontWeight: 'bold'
+        }}>
+          {toastMsg}
+        </div>
+      )}
     </div>
   );
 }
