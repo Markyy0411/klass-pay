@@ -19,11 +19,21 @@ KlassPay solves a massive problem for university students: the awkward, stressfu
 - **Automated Settlement & GCash Offramp:** Once the target goal is met, the contract is automatically marked as "Settled", and the Organizer gets access to a one-click button to withdraw their XLM directly into their GCash account.
 - **Sleek UI/UX:** Built with React, Vite, and completely modern styling (Toast Notifications, Glassmorphism, CSS Variables).
 
-## 🗣️ User Feedback Iteration Summary
-Based on feedback from our initial pilot users, we made several critical iterations:
+## 🏆 Level 6: Mainnet & Black Belt Phase
+KlassPay has officially upgraded to Stellar Mainnet! 
+
+### 🥋 Black Belt Feature: Gasless Transactions (Fee Sponsorship)
+We implemented a **Fee Sponsorship** model using `FeeBumpTransaction`. When users pay their share of a bill, a background Sponsor Wallet automatically pays the Stellar network gas fees for them. This creates a completely frictionless, gasless experience for the end user!
+
+## 🗣️ User Feedback & Future Evolution
+Based on feedback from our initial 20+ Mainnet users, we made several critical iterations and have planned our next phase of evolution:
+
 1. **The GCash Offramp:** Initially, organizers didn't know what to do with XLM once collected. Users demanded a way to convert to local fiat. We added the **"Withdraw to GCash"** button so organizers can instantly offramp their funds upon goal completion.
 2. **Visual Feedback:** Payers were confused if their payment went through. We implemented **Toast Notifications** and a live-updating Progress Bar to give instant confirmation of successful blockchain transactions.
-3. **Shareability:** Users didn't want to explain how to find the bill. We added a **Copy Link** button that generates a direct URL (e.g., `/?bill=123456`) that auto-loads the specific bill for friends to pay immediately.
+3. **Gas Fees (The Ultimate Friction):** Users complained that they needed a small amount of XLM just to pay for network gas fees, which was a huge barrier to entry for students.
+   - **Improvement Made:** We implemented Fee Sponsorship (Gasless Transactions) using `FeeBumpTransaction` so students can pay bills without needing any extra XLM for gas fees!
+   - **Git Commit Link:** [View the Gasless Implementation (f04ab11)](https://github.com/Markyy0411/klass-pay/commit/f04ab11aa87d7f8aa6f1f88ab5a0c830d30904e1)
+4. **Future Evolution:** In our next phase, we plan to implement SEP-24 Anchor integration so that users can fund their wallets directly with a credit card or bank transfer without ever touching a crypto exchange.
 
 ---
 
