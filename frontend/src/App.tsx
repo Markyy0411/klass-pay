@@ -201,11 +201,9 @@ export default function App() {
                     <div className="msg msg--ok" style={{ background: 'linear-gradient(90deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))', border: '1px solid var(--success)'}}>
                       🎉 <strong>Goal reached!</strong> This bill has been fully paid off.
                     </div>
-                    {bill.organizer === address && (
                       <button className="btn" style={{ background: '#005CEE' }} onClick={() => alert(`Withdrawal initiated! ${bill.target} XLM will arrive in your GCash account shortly.`)}>
                         📱 Withdraw {bill.target} XLM to GCash
                       </button>
-                    )}
                   </div>
                 )}
                 <table className="bill-table">
