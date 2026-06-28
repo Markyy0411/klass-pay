@@ -37,10 +37,10 @@ cd klass-pay
 
 | Field | Value |
 |-------|-------|
-| Contract ID | `CDQVUENXMPWVLDOJKAW7U3VHDOCMACBIUC7E5TIDIJXEOB4TOKT4KXOE` |
+| Contract ID | `CBRIH3HBATDNMNKFGTLJ3G3WBGP4DDQTHPX7NOIFZRXRNI75V3EPWWLG` |
 | Network | testnet |
-| Explorer | [View on stellar.expert](https://stellar.expert/explorer/testnet/contract/CDQVUENXMPWVLDOJKAW7U3VHDOCMACBIUC7E5TIDIJXEOB4TOKT4KXOE) |
-| Deploy Tx | [View transaction](https://stellar.expert/explorer/testnet/tx/fc75e226a61f29715c5f8ec3cabe8889ef31bd23a9b9d2b5fae0f0f4a10c7b4c) |
-| Deployed | 2026-06-26 13:54:01 UTC |
+| Explorer | [View on stellar.expert](https://stellar.expert/explorer/testnet/contract/CBRIH3HBATDNMNKFGTLJ3G3WBGP4DDQTHPX7NOIFZRXRNI75V3EPWWLG) |
+| Deploy Tx | [View transaction](https://stellar.expert/explorer/testnet/tx/52e9a7d19fc460d67829273b60bedef693274f8c129695c0ef96226e7b3fcd42) |
+| Deployed | 2026-06-28 01:11:11 UTC |
 | Wallet | freighter (`GC7P…DJEB`) |
 

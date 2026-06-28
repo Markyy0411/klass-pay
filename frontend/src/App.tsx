@@ -1,317 +1,264 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWallet } from './wallet';
-import { useContractId } from './contractRuntime';
 import { simulate, invokeWrite, BillInfo } from './sorobanClient';
-import { logAction, ensureConnected, applyContractError, Status } from './previewActions';
-import './ui.css'; // <--- THIS WAS THE MISSING LINE!
 
-const DEPLOY_HINT = 'contracts/klass-pay';
+export default function App() {
+  const { isConnected, address, connectWallet } = useWallet();
 
-const App: React.FC = () => {
-  const { address, signXDR, connect, connecting } = useWallet();
-  const contractId = useContractId();
+  // Read ?bill=1234 from URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const billParam = searchParams.get('bill');
+  const initialBillId = billParam ? parseInt(billParam) : null;
 
-  const [status, setStatus] = useState<Status>('idle');
-  const [message, setMessage] = useState('');
-  const [billInfo, setBillInfo] = useState<BillInfo | null>(null);
+  const [currentBillId, setCurrentBillId] = useState<number | null>(initialBillId);
+  const [bill, setBill] = useState<BillInfo | null>(null);
+  
+  const [target, setTarget] = useState(100);
+  const [payAmount, setPayAmount] = useState(10);
+  const [joinBillId, setJoinBillId] = useState('');
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [createAmount, setCreateAmount] = useState('');
-  const [payAmount, setPayAmount] = useState('');
-
-  const loadBill = useCallback(async () => {
-    if (!contractId || !address) return;
-    setStatus('loading');
-    setMessage('');
-    try {
-      const info = await simulate('get', address);
-      setBillInfo(info);
-      setStatus('ok');
-      setMessage('Bill loaded');
-    } catch (err) {
-      const result = applyContractError(err);
-      setStatus(result.status);
-      if (result.message.includes('#2') || result.message.includes('NotFound')) {
-        setMessage('No active bill. You can create one!');
-        setStatus('ok');
-      } else {
-        setMessage(result.message);
-      }
-      setBillInfo(null);
-    }
-  }, [contractId, address]);
-
+  // Fetch bill automatically if we have an ID and wallet
   useEffect(() => {
-    loadBill();
-  }, [loadBill]);
+    if (isConnected && address && currentBillId !== null) {
+      handleGetBill(currentBillId);
+    }
+  }, [isConnected, address, currentBillId]);
+
+  const handleGetBill = async (id: number) => {
+    if (!address) return;
+    try {
+      const b = await simulate('get', address, [{ value: id, type: 'u32' }]);
+      setBill(b);
+      setError(null);
+    } catch (e: any) {
+      if (e.message.includes('NotFound')) {
+        setBill(null);
+        setError('Bill not found. It may not exist yet!');
+      } else {
+        setError('Failed to fetch bill: ' + e.message);
+      }
+    }
+  };
 
   const handleCreate = async () => {
+    if (!address) return;
+    setLoading(true);
+    setError(null);
     try {
-      const addr = ensureConnected(address);
-      if (!signXDR) throw new Error('Wallet signer not available. Connect Freighter.');
-      const amount = parseInt(createAmount, 10);
-      if (isNaN(amount) || amount <= 0) throw new Error('Enter a valid amount greater than 0');
-
-      setStatus('loading');
-      setMessage('Creating bill… please approve in wallet.');
-      await invokeWrite('create', addr, signXDR, [
-        { value: addr, type: 'address' },
-        { value: amount, type: 'u32' },
-      ]);
-      setStatus('ok');
-      setMessage(`Bill created for ${amount} units!`);
-      setCreateAmount('');
-      await loadBill();
-    } catch (err) {
-      const result = applyContractError(err);
-      setStatus(result.status);
-      setMessage(result.message);
+      // Generate a random 6-digit Bill ID
+      const newBillId = Math.floor(100000 + Math.random() * 900000);
+      
+      const args = [
+        { value: address, type: 'address' },
+        { value: newBillId, type: 'u32' },
+        { value: target, type: 'u32' },
+      ];
+      await invokeWrite('create', address, window.freighterApi.signTransaction, args);
+      
+      setCurrentBillId(newBillId);
+      // Update the URL without reloading the page
+      window.history.pushState({}, '', `?bill=${newBillId}`);
+      await handleGetBill(newBillId);
+    } catch (e: any) {
+      setError('Create error: ' + e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handlePay = async () => {
+    if (!address || currentBillId === null) return;
+    setLoading(true);
+    setError(null);
     try {
-      const addr = ensureConnected(address);
-      if (!signXDR) throw new Error('Wallet signer not available. Connect Freighter.');
-      const amount = parseInt(payAmount, 10);
-      if (isNaN(amount) || amount <= 0) throw new Error('Enter a valid amount greater than 0');
-      
-      if (billInfo && (billInfo.funded + amount > billInfo.target)) {
-         throw new Error(`Amount too high! Only ${billInfo.target - billInfo.funded} remaining.`);
-      }
-
-      setStatus('loading');
-      setMessage('Submitting payment… please approve in wallet.');
-      await invokeWrite('pay', addr, signXDR, [
-        { value: addr, type: 'address' },
-        { value: amount, type: 'u32' },
-      ]);
-      setStatus('ok');
-      setMessage(`Successfully paid ${amount} units!`);
-      setPayAmount('');
-      await loadBill();
-    } catch (err) {
-      const result = applyContractError(err);
-      setStatus(result.status);
-      setMessage(result.message);
+      const args = [
+        { value: address, type: 'address' },
+        { value: currentBillId, type: 'u32' },
+        { value: payAmount, type: 'u32' },
+      ];
+      await invokeWrite('pay', address, window.freighterApi.signTransaction, args);
+      await handleGetBill(currentBillId);
+    } catch (e: any) {
+      setError('Pay error: ' + e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleConnect = async () => {
-    try {
-      setStatus('loading');
-      setMessage('Connecting wallet…');
-      await connect();
-      setStatus('ok');
-      setMessage('Wallet connected!');
-    } catch (err) {
-      const result = applyContractError(err);
-      setStatus(result.status);
-      setMessage(result.message);
-    }
+  const copyShareLink = () => {
+    const link = `${window.location.origin}/?bill=${currentBillId}`;
+    navigator.clipboard.writeText(link);
+    alert('Share link copied to clipboard! Send this to your 10 users!');
   };
 
-  const progressPct = billInfo && billInfo.target > 0
-      ? Math.min(100, Math.round((billInfo.funded / billInfo.target) * 100))
-      : 0;
+  const handleJoin = () => {
+    const id = parseInt(joinBillId);
+    if (isNaN(id)) return;
+    setCurrentBillId(id);
+    window.history.pushState({}, '', `?bill=${id}`);
+  };
 
-  const isLoading = status === 'loading';
-  const showSetup = status === 'setup';
-  
-  const hasBill = billInfo !== null;
-  const isSettled = billInfo?.settled === true;
+  const goHome = () => {
+    setCurrentBillId(null);
+    setBill(null);
+    window.history.pushState({}, '', '/');
+  };
 
   return (
     <div className="container">
-      <header className="header">
-        <h1>💸 KlassPay</h1>
-        <p>Campus split billing for Filipino college students</p>
-      </header>
-      
-      {!address ? (
-        <div className="tutorial-banner">
-          <h3>Welcome to KlassPay! 👋</h3>
-          <p>This app lets you easily split bills with your classmates using the Stellar blockchain.</p>
-          <p><strong>Step 1:</strong> Connect your Freighter wallet to get started.</p>
-        </div>
-      ) : (
-        <div className="tutorial-banner">
-          {hasBill ? (
-            isSettled ? (
-              <p>🎉 <strong>Goal reached!</strong> This bill has been fully paid off.</p>
-            ) : (
-              <p>💰 <strong>Step 3: Pay Shares.</strong> A bill is currently active! Enter your contribution below to pay your share.</p>
-            )
-          ) : (
-            <p>📝 <strong>Step 2: Create a Bill.</strong> There are no active bills right now. Create one below to start collecting funds!</p>
-          )}
-        </div>
-      )}
-
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <span className={`status status--${status}`}>
-          {status === 'idle' && '● Idle'}
-          {status === 'loading' && '◌ Loading…'}
-          {status === 'ok' && '✓ Ready'}
-          {status === 'error' && '✕ Error'}
-          {status === 'setup' && '⚙ Setup Required'}
-        </span>
+      <div className="header">
+        <h1 onClick={goHome} style={{cursor: 'pointer'}}>💸 KlassPay</h1>
+        <p>The premium split-payment engine for students.</p>
       </div>
 
-      {address ? (
-        <div className="wallet-bar">
-          <span className="wallet-bar__label">Wallet</span>
+      <div className="wallet-bar">
+        <span className="wallet-bar__label">Wallet</span>
+        {isConnected ? (
           <span className="wallet-bar__address">
-            {address.slice(0, 8)}…{address.slice(-8)}
+            {address?.substring(0, 8)}...{address?.slice(-8)}
           </span>
-        </div>
-      ) : (
-        <div className="card">
-          <h2><span className="icon">🔗</span> Connect Wallet</h2>
-          <button
-            id="btn-connect-wallet"
-            className="btn"
-            onClick={handleConnect}
-            disabled={connecting || isLoading}
-          >
-            {connecting ? 'Connecting…' : 'Connect Freighter'}
+        ) : (
+          <button className="btn" style={{ width: 'auto', padding: '0.5rem 1rem' }} onClick={connectWallet}>
+            Connect Freighter
           </button>
+        )}
+      </div>
+
+      {!isConnected && (
+        <div className="card" style={{ textAlign: 'center' }}>
+          <h2>Welcome to KlassPay</h2>
+          <p style={{ color: 'var(--text-muted)' }}>Please connect your Stellar wallet to get started.</p>
         </div>
       )}
 
-      {showSetup && (
-        <div className="card">
-          <h2><span className="icon">⚙</span> Deploy Contract</h2>
-          <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5 }}>
-            No contract found. Deploy <strong>{DEPLOY_HINT}</strong> via Soroban IDE
-            and set <code style={{ color: '#a78bfa' }}>VITE_CONTRACT_ID</code> in your <code style={{ color: '#a78bfa' }}>.env</code> file.
-          </p>
-        </div>
-      )}
-
-      {address && !hasBill && !showSetup && (
-        <div className="card">
-          <h2><span className="icon">📝</span> Create a New Bill</h2>
-          <p className="helper-text">Set the total amount you need to collect from the group.</p>
-          <div className="field-group">
-            <input
-              id="input-create-amount"
-              className="input"
-              type="number"
-              min="1"
-              placeholder="e.g. 5000"
-              value={createAmount}
-              onChange={(e) => setCreateAmount(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <button
-            id="btn-create-bill"
-            className="btn"
-            onClick={handleCreate}
-            disabled={isLoading || !address || !contractId}
-          >
-            {isLoading ? '⏳ Processing…' : 'Create Bill'}
-          </button>
-        </div>
-      )}
-
-      {address && hasBill && !isSettled && (
-        <div className="card">
-          <h2><span className="icon">💰</span> Pay Your Share</h2>
-          <p className="helper-text">Enter the amount you want to contribute. Only {billInfo!.target - billInfo!.funded} units left!</p>
-          <div className="field-group">
-            <input
-              id="input-pay-amount"
-              className="input"
-              type="number"
-              min="1"
-              max={billInfo!.target - billInfo!.funded}
-              placeholder={`Remaining: ${billInfo!.target - billInfo!.funded}`}
-              value={payAmount}
-              onChange={(e) => setPayAmount(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <button
-            id="btn-pay-share"
-            className="btn"
-            onClick={handlePay}
-            disabled={isLoading || !address || !contractId}
-          >
-            {isLoading ? '⏳ Processing…' : 'Pay Share'}
-          </button>
-        </div>
-      )}
-
-      {hasBill && (
-        <div className="card">
-          <h2>
-            <span className="icon">📊</span> Bill Status
-            <button
-              id="btn-refresh-bill"
-              className="btn"
-              style={{ marginLeft: 'auto', width: 'auto', padding: '0.4rem 1rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.1)' }}
-              onClick={loadBill}
-              disabled={isLoading}
-            >
-              ↻ Refresh
+      {isConnected && currentBillId === null && (
+        <>
+          <div className="card">
+            <h2><span className="icon">🚀</span> Create a New Bill</h2>
+            <div className="field-group">
+              <label className="wallet-bar__label">Target Amount (XLM)</label>
+              <input
+                className="input"
+                type="number"
+                value={target}
+                onChange={(e) => setTarget(Number(e.target.value))}
+                min={1}
+              />
+            </div>
+            <button className="btn" onClick={handleCreate} disabled={loading}>
+              {loading ? 'Deploying Bill...' : 'Create Bill'}
             </button>
-          </h2>
-
-          <table className="bill-table">
-            <tbody>
-              <tr>
-                <td>Organizer</td>
-                <td>{billInfo.organizer.slice(0, 8)}…{billInfo.organizer.slice(-8)}</td>
-              </tr>
-              <tr>
-                <td>Target</td>
-                <td>{billInfo.target.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td>Funded</td>
-                <td>
-                  {billInfo.funded.toLocaleString()} / {billInfo.target.toLocaleString()}
-                  {' '}({progressPct}%)
-                </td>
-              </tr>
-              <tr>
-                <td>Settled</td>
-                <td>
-                  <span className={`status ${billInfo.settled ? 'status--ok' : 'status--loading'}`}>
-                    {billInfo.settled ? '✓ Yes' : '○ No'}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div className="progress-bar">
-            <div className="progress-bar__fill" style={{ width: `${progressPct}%` }} />
           </div>
 
-          <h2 style={{ marginTop: '2rem' }}>
-            <span className="icon">👥</span> Payers ({billInfo.payers.length})
-          </h2>
-          {billInfo.payers.length > 0 ? (
-            <ul className="payer-list">
-              {billInfo.payers.map((payer, i) => (
-                <li key={i}>{payer.slice(0, 8)}…{payer.slice(-8)}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="helper-text">No payments yet</p>
-          )}
-        </div>
+          <div className="card">
+            <h2><span className="icon">🔍</span> Join Existing Bill</h2>
+            <div className="field-group">
+              <label className="wallet-bar__label">Enter Bill ID (e.g., 123456)</label>
+              <input
+                className="input"
+                type="number"
+                value={joinBillId}
+                onChange={(e) => setJoinBillId(e.target.value)}
+                placeholder="Bill ID"
+              />
+            </div>
+            <button className="btn" onClick={handleJoin} disabled={!joinBillId}>
+              View Bill
+            </button>
+          </div>
+        </>
       )}
 
-      {message && (
-        <div className={`msg ${status === 'error' || status === 'setup' ? 'msg--error' : 'msg--ok'}`}>
-          {message}
-        </div>
+      {isConnected && currentBillId !== null && (
+        <>
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+               <h2 style={{ margin: 0 }}>📊 Bill #{currentBillId}</h2>
+               <button className="status status--ok" onClick={copyShareLink} style={{ cursor: 'pointer', background: 'transparent' }}>
+                 🔗 Copy Link
+               </button>
+            </div>
+
+            {bill ? (
+              <>
+                {bill.settled && (
+                  <div className="msg msg--ok" style={{ marginBottom: '1.5rem', background: 'linear-gradient(90deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))', border: '1px solid var(--success)'}}>
+                    🎉 <strong>Goal reached!</strong> This bill has been fully paid off.
+                  </div>
+                )}
+                <table className="bill-table">
+                  <tbody>
+                    <tr>
+                      <td>Organizer</td>
+                      <td>{bill.organizer.substring(0, 8)}...{bill.organizer.slice(-8)}</td>
+                    </tr>
+                    <tr>
+                      <td>Target</td>
+                      <td>{bill.target.toLocaleString()} XLM</td>
+                    </tr>
+                    <tr>
+                      <td>Funded</td>
+                      <td>{bill.funded.toLocaleString()} / {bill.target.toLocaleString()} ({Math.floor((bill.funded / bill.target) * 100)}%)</td>
+                    </tr>
+                    <tr>
+                      <td>Settled</td>
+                      <td>{bill.settled ? <span className="status status--ok">✔ Yes</span> : <span className="status status--loading">Pending</span>}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="progress-bar">
+                  <div
+                    className="progress-bar__fill"
+                    style={{ width: `${Math.min((bill.funded / bill.target) * 100, 100)}%` }}
+                  />
+                </div>
+
+                {!bill.settled && (
+                  <>
+                    <div className="field-group" style={{ marginTop: '2rem' }}>
+                      <label className="wallet-bar__label">Payment Amount</label>
+                      <input
+                        className="input"
+                        type="number"
+                        value={payAmount}
+                        onChange={(e) => setPayAmount(Number(e.target.value))}
+                        min={1}
+                      />
+                    </div>
+                    <button className="btn" onClick={handlePay} disabled={loading}>
+                      {loading ? 'Processing Payment...' : `Pay ${payAmount} XLM`}
+                    </button>
+                  </>
+                )}
+
+                <h3 style={{ marginTop: '2rem', marginBottom: '1rem', color: 'var(--text-muted)' }}>
+                  👥 Payers ({bill.payers.length})
+                </h3>
+                <ul className="payer-list">
+                  {bill.payers.map((p, i) => (
+                    <li key={i}>{p.substring(0, 12)}...{p.slice(-12)}</li>
+                  ))}
+                  {bill.payers.length === 0 && <p style={{color: 'var(--text-muted)'}}>No one has paid yet.</p>}
+                </ul>
+              </>
+            ) : (
+               <div className="msg msg--error" style={{ textAlign: 'center' }}>
+                 This Bill ID does not exist on the blockchain!
+               </div>
+            )}
+            
+            <button className="btn" style={{ marginTop: '1.5rem', background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-muted)' }} onClick={goHome}>
+              ← Back to Home
+            </button>
+          </div>
+        </>
       )}
+
+      {error && <div className="msg msg--error">{error}</div>}
     </div>
   );
-};
-
-export default App;
+}
