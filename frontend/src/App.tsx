@@ -3,7 +3,9 @@ import { useWallet } from './wallet';
 import { simulate, invokeWrite, BillInfo } from './sorobanClient';
 
 export default function App() {
-  const { isConnected, address, connectWallet } = useWallet();
+  // FIXED: Destructure the correct variables from wallet.ts
+  const { address, connect, signXDR } = useWallet();
+  const isConnected = !!address;
 
   // Read ?bill=1234 from URL
   const searchParams = new URLSearchParams(window.location.search);
@@ -44,7 +46,7 @@ export default function App() {
   };
 
   const handleCreate = async () => {
-    if (!address) return;
+    if (!address || !signXDR) return;
     setLoading(true);
     setError(null);
     try {
@@ -56,7 +58,9 @@ export default function App() {
         { value: newBillId, type: 'u32' },
         { value: target, type: 'u32' },
       ];
-      await invokeWrite('create', address, window.freighterApi.signTransaction, args);
+      
+      // FIXED: Use signXDR from useWallet()
+      await invokeWrite('create', address, signXDR, args);
       
       setCurrentBillId(newBillId);
       // Update the URL without reloading the page
@@ -70,7 +74,7 @@ export default function App() {
   };
 
   const handlePay = async () => {
-    if (!address || currentBillId === null) return;
+    if (!address || currentBillId === null || !signXDR) return;
     setLoading(true);
     setError(null);
     try {
@@ -79,7 +83,9 @@ export default function App() {
         { value: currentBillId, type: 'u32' },
         { value: payAmount, type: 'u32' },
       ];
-      await invokeWrite('pay', address, window.freighterApi.signTransaction, args);
+      
+      // FIXED: Use signXDR from useWallet()
+      await invokeWrite('pay', address, signXDR, args);
       await handleGetBill(currentBillId);
     } catch (e: any) {
       setError('Pay error: ' + e.message);
@@ -121,7 +127,7 @@ export default function App() {
             {address?.substring(0, 8)}...{address?.slice(-8)}
           </span>
         ) : (
-          <button className="btn" style={{ width: 'auto', padding: '0.5rem 1rem' }} onClick={connectWallet}>
+          <button className="btn" style={{ width: 'auto', padding: '0.5rem 1rem' }} onClick={connect}>
             Connect Freighter
           </button>
         )}
