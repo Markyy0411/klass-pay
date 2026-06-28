@@ -3,6 +3,7 @@ import { useWallet } from './wallet';
 import { useContractId } from './contractRuntime';
 import { simulate, invokeWrite, BillInfo } from './sorobanClient';
 import { logAction, ensureConnected, applyContractError, Status } from './previewActions';
+import './ui.css'; // <--- THIS WAS THE MISSING LINE!
 
 const DEPLOY_HINT = 'contracts/klass-pay';
 
@@ -10,36 +11,25 @@ const App: React.FC = () => {
   const { address, signXDR, connect, connecting } = useWallet();
   const contractId = useContractId();
 
-  /* ── UI State ── */
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');
   const [billInfo, setBillInfo] = useState<BillInfo | null>(null);
 
-  /* Create Bill form */
   const [createAmount, setCreateAmount] = useState('');
-
-  /* Pay Share form */
   const [payAmount, setPayAmount] = useState('');
 
-  /* ── Load bill info on mount / when contract or address changes ── */
   const loadBill = useCallback(async () => {
     if (!contractId || !address) return;
-
     setStatus('loading');
     setMessage('');
-    logAction('simulate:get', { address, contractId });
-
     try {
       const info = await simulate('get', address);
       setBillInfo(info);
       setStatus('ok');
       setMessage('Bill loaded');
-      logAction('simulate:get:ok', { info });
     } catch (err) {
       const result = applyContractError(err);
       setStatus(result.status);
-      
-      // If the error is NotFound, it just means no bill is created yet.
       if (result.message.includes('#2') || result.message.includes('NotFound')) {
         setMessage('No active bill. You can create one!');
         setStatus('ok');
@@ -47,7 +37,6 @@ const App: React.FC = () => {
         setMessage(result.message);
       }
       setBillInfo(null);
-      logAction('simulate:get:error', { error: result.message });
     }
   }, [contractId, address]);
 
@@ -55,7 +44,6 @@ const App: React.FC = () => {
     loadBill();
   }, [loadBill]);
 
-  /* ── Create Bill Handler ── */
   const handleCreate = async () => {
     try {
       const addr = ensureConnected(address);
@@ -65,29 +53,21 @@ const App: React.FC = () => {
 
       setStatus('loading');
       setMessage('Creating bill… please approve in wallet.');
-      logAction('invokeWrite:create', { organizer: addr, amount });
-
       await invokeWrite('create', addr, signXDR, [
         { value: addr, type: 'address' },
         { value: amount, type: 'u32' },
       ]);
-
       setStatus('ok');
       setMessage(`Bill created for ${amount} units!`);
       setCreateAmount('');
-      logAction('invokeWrite:create:ok', { amount });
-
-      /* Refresh bill state */
       await loadBill();
     } catch (err) {
       const result = applyContractError(err);
       setStatus(result.status);
       setMessage(result.message);
-      logAction('invokeWrite:create:error', { error: result.message });
     }
   };
 
-  /* ── Pay Share Handler ── */
   const handlePay = async () => {
     try {
       const addr = ensureConnected(address);
@@ -101,68 +81,52 @@ const App: React.FC = () => {
 
       setStatus('loading');
       setMessage('Submitting payment… please approve in wallet.');
-      logAction('invokeWrite:pay', { payer: addr, amount });
-
       await invokeWrite('pay', addr, signXDR, [
         { value: addr, type: 'address' },
         { value: amount, type: 'u32' },
       ]);
-
       setStatus('ok');
       setMessage(`Successfully paid ${amount} units!`);
       setPayAmount('');
-      logAction('invokeWrite:pay:ok', { amount });
-
-      /* Refresh bill state */
       await loadBill();
     } catch (err) {
       const result = applyContractError(err);
       setStatus(result.status);
       setMessage(result.message);
-      logAction('invokeWrite:pay:error', { error: result.message });
     }
   };
 
-  /* ── Wallet connect ── */
   const handleConnect = async () => {
     try {
       setStatus('loading');
       setMessage('Connecting wallet…');
-      logAction('wallet:connect');
       await connect();
       setStatus('ok');
       setMessage('Wallet connected!');
-      logAction('wallet:connect:ok');
     } catch (err) {
       const result = applyContractError(err);
       setStatus(result.status);
       setMessage(result.message);
-      logAction('wallet:connect:error', { error: result.message });
     }
   };
 
-  /* ── Computed values ── */
-  const progressPct =
-    billInfo && billInfo.target > 0
+  const progressPct = billInfo && billInfo.target > 0
       ? Math.min(100, Math.round((billInfo.funded / billInfo.target) * 100))
       : 0;
 
   const isLoading = status === 'loading';
   const showSetup = status === 'setup';
   
-  // Logic Booleans for UI sections
   const hasBill = billInfo !== null;
   const isSettled = billInfo?.settled === true;
 
   return (
     <div className="container">
-      {/* Header */}
       <header className="header">
         <h1>💸 KlassPay</h1>
         <p>Campus split billing for Filipino college students</p>
       </header>
       
-      {/* Tutorial / Guide Section */}
       {!address ? (
         <div className="tutorial-banner">
           <h3>Welcome to KlassPay! 👋</h3>
@@ -183,7 +147,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Status Badge */}
       <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
         <span className={`status status--${status}`}>
           {status === 'idle' && '● Idle'}
@@ -194,7 +157,6 @@ const App: React.FC = () => {
         </span>
       </div>
 
-      {/* Wallet Bar */}
       {address ? (
         <div className="wallet-bar">
           <span className="wallet-bar__label">Wallet</span>
@@ -216,19 +178,16 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Setup Hint */}
       {showSetup && (
         <div className="card">
           <h2><span className="icon">⚙</span> Deploy Contract</h2>
           <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5 }}>
             No contract found. Deploy <strong>{DEPLOY_HINT}</strong> via Soroban IDE
-            and set <code style={{ color: '#a78bfa' }}>VITE_CONTRACT_ID</code> in your{' '}
-            <code style={{ color: '#a78bfa' }}>.env</code> file.
+            and set <code style={{ color: '#a78bfa' }}>VITE_CONTRACT_ID</code> in your <code style={{ color: '#a78bfa' }}>.env</code> file.
           </p>
         </div>
       )}
 
-      {/* ── Create Bill Section ── */}
       {address && !hasBill && !showSetup && (
         <div className="card">
           <h2><span className="icon">📝</span> Create a New Bill</h2>
@@ -256,7 +215,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* ── Pay Share Section ── */}
       {address && hasBill && !isSettled && (
         <div className="card">
           <h2><span className="icon">💰</span> Pay Your Share</h2>
@@ -276,7 +234,7 @@ const App: React.FC = () => {
           </div>
           <button
             id="btn-pay-share"
-            className="btn btn--secondary"
+            className="btn"
             onClick={handlePay}
             disabled={isLoading || !address || !contractId}
           >
@@ -285,7 +243,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* ── Bill Status Section ── */}
       {hasBill && (
         <div className="card">
           <h2>
@@ -293,12 +250,7 @@ const App: React.FC = () => {
             <button
               id="btn-refresh-bill"
               className="btn"
-              style={{
-                marginLeft: 'auto',
-                width: 'auto',
-                padding: '0.3rem 0.75rem',
-                fontSize: '0.75rem',
-              }}
+              style={{ marginLeft: 'auto', width: 'auto', padding: '0.4rem 1rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.1)' }}
               onClick={loadBill}
               disabled={isLoading}
             >
@@ -306,73 +258,55 @@ const App: React.FC = () => {
             </button>
           </h2>
 
-          <>
-            <table className="bill-table">
-              <tbody>
-                <tr>
-                  <td>Organizer</td>
-                  <td>{billInfo.organizer.slice(0, 8)}…{billInfo.organizer.slice(-8)}</td>
-                </tr>
-                <tr>
-                  <td>Target</td>
-                  <td>{billInfo.target.toLocaleString()}</td>
-                </tr>
-                <tr>
-                  <td>Funded</td>
-                  <td>
-                    {billInfo.funded.toLocaleString()} / {billInfo.target.toLocaleString()}
-                    {' '}({progressPct}%)
-                  </td>
-                </tr>
-                <tr>
-                  <td>Settled</td>
-                  <td>
-                    <span
-                      className={`settled-badge ${
-                        billInfo.settled ? 'settled-badge--yes' : 'settled-badge--no'
-                      }`}
-                    >
-                      {billInfo.settled ? '✓ Yes' : '○ No'}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <table className="bill-table">
+            <tbody>
+              <tr>
+                <td>Organizer</td>
+                <td>{billInfo.organizer.slice(0, 8)}…{billInfo.organizer.slice(-8)}</td>
+              </tr>
+              <tr>
+                <td>Target</td>
+                <td>{billInfo.target.toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>Funded</td>
+                <td>
+                  {billInfo.funded.toLocaleString()} / {billInfo.target.toLocaleString()}
+                  {' '}({progressPct}%)
+                </td>
+              </tr>
+              <tr>
+                <td>Settled</td>
+                <td>
+                  <span className={`status ${billInfo.settled ? 'status--ok' : 'status--loading'}`}>
+                    {billInfo.settled ? '✓ Yes' : '○ No'}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-            {/* Progress Bar */}
-            <div className="progress-bar">
-              <div
-                className="progress-bar__fill"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
+          <div className="progress-bar">
+            <div className="progress-bar__fill" style={{ width: `${progressPct}%` }} />
+          </div>
 
-            {/* Payers */}
-            <h2 style={{ marginTop: '1rem' }}>
-              <span className="icon">👥</span> Payers ({billInfo.payers.length})
-            </h2>
-            {billInfo.payers.length > 0 ? (
-              <ul className="payer-list">
-                {billInfo.payers.map((payer, i) => (
-                  <li key={i}>
-                    {payer.slice(0, 8)}…{payer.slice(-8)}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="empty-state">No payments yet</p>
-            )}
-          </>
+          <h2 style={{ marginTop: '2rem' }}>
+            <span className="icon">👥</span> Payers ({billInfo.payers.length})
+          </h2>
+          {billInfo.payers.length > 0 ? (
+            <ul className="payer-list">
+              {billInfo.payers.map((payer, i) => (
+                <li key={i}>{payer.slice(0, 8)}…{payer.slice(-8)}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="helper-text">No payments yet</p>
+          )}
         </div>
       )}
 
-      {/* Message */}
       {message && (
-        <div
-          className={`msg ${
-            status === 'error' || status === 'setup' ? 'msg--error' : 'msg--ok'
-          }`}
-        >
+        <div className={`msg ${status === 'error' || status === 'setup' ? 'msg--error' : 'msg--ok'}`}>
           {message}
         </div>
       )}
