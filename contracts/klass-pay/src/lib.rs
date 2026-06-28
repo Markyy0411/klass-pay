@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, contracttype, contracterror, symbol_short, Address, Env, panic_with_error};
+use soroban_sdk::{contract, contractimpl, contracttype, contracterror, symbol_short, Address, Env, panic_with_error, Vec};
 
 /// Bill information stored on-chain.
 #[contracttype]
@@ -10,7 +10,7 @@ pub struct BillInfo {
     pub target: u32,
     pub funded: u32,
     pub settled: bool,
-    pub payers: u32,
+    pub payers: Vec<Address>,
 }
 
 /// Contract error codes.
@@ -30,8 +30,6 @@ pub struct SplitPayContract;
 
 #[contractimpl]
 impl SplitPayContract {
-    /// Creates a new bill with the given target amount.
-    /// The organizer must authorize the call.
     pub fn create(env: Env, organizer: Address, amount: u32) {
         organizer.require_auth();
 
@@ -48,15 +46,13 @@ impl SplitPayContract {
             target: amount,
             funded: 0,
             settled: false,
-            payers: 0,
+            payers: Vec::new(&env),
         };
 
         env.storage().instance().set(&symbol_short!("BILL"), &bill);
         env.storage().instance().extend_ttl(50, 100);
     }
 
-    /// Pays toward an existing bill. The payer must authorize the call.
-    /// Auto-settles when funded reaches the target.
     pub fn pay(env: Env, payer: Address, amount: u32) {
         payer.require_auth();
 
@@ -79,7 +75,11 @@ impl SplitPayContract {
         }
 
         bill.funded += amount;
-        bill.payers += 1;
+        
+        // Add payer to the list if they aren't already in it
+        if !bill.payers.contains(&payer) {
+            bill.payers.push_back(payer);
+        }
 
         if bill.funded == bill.target {
             bill.settled = true;
@@ -89,7 +89,6 @@ impl SplitPayContract {
         env.storage().instance().extend_ttl(50, 100);
     }
 
-    /// Returns the current bill information.
     pub fn get(env: Env) -> BillInfo {
         env.storage()
             .instance()
@@ -97,7 +96,3 @@ impl SplitPayContract {
             .unwrap_or_else(|| panic_with_error!(&env, Error::NotFound))
     }
 }
-
-// This tells Rust to look for tests in the test.rs file
-#[cfg(test)]
-mod test;

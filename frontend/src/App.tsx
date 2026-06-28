@@ -4,7 +4,7 @@ import { useContractId } from './contractRuntime';
 import { simulate, invokeWrite, BillInfo } from './sorobanClient';
 import { logAction, ensureConnected, applyContractError, Status } from './previewActions';
 
-const DEPLOY_HINT = 'contracts/split_pay';
+const DEPLOY_HINT = 'contracts/klass-pay';
 
 const App: React.FC = () => {
   const { address, signXDR, connect, connecting } = useWallet();
@@ -38,7 +38,14 @@ const App: React.FC = () => {
     } catch (err) {
       const result = applyContractError(err);
       setStatus(result.status);
-      setMessage(result.message);
+      
+      // If the error is NotFound, it just means no bill is created yet.
+      if (result.message.includes('#2') || result.message.includes('NotFound')) {
+        setMessage('No active bill. You can create one!');
+        setStatus('ok');
+      } else {
+        setMessage(result.message);
+      }
       setBillInfo(null);
       logAction('simulate:get:error', { error: result.message });
     }
@@ -49,7 +56,6 @@ const App: React.FC = () => {
   }, [loadBill]);
 
   /* ── Create Bill Handler ── */
-  /* Maps to: create(organizer: Address, amount: u32) — write */
   const handleCreate = async () => {
     try {
       const addr = ensureConnected(address);
@@ -58,7 +64,7 @@ const App: React.FC = () => {
       if (isNaN(amount) || amount <= 0) throw new Error('Enter a valid amount greater than 0');
 
       setStatus('loading');
-      setMessage('Creating bill…');
+      setMessage('Creating bill… please approve in wallet.');
       logAction('invokeWrite:create', { organizer: addr, amount });
 
       await invokeWrite('create', addr, signXDR, [
@@ -67,7 +73,7 @@ const App: React.FC = () => {
       ]);
 
       setStatus('ok');
-      setMessage(`Bill created for ${amount} units`);
+      setMessage(`Bill created for ${amount} units!`);
       setCreateAmount('');
       logAction('invokeWrite:create:ok', { amount });
 
@@ -82,16 +88,19 @@ const App: React.FC = () => {
   };
 
   /* ── Pay Share Handler ── */
-  /* Maps to: pay(payer: Address, amount: u32) — write */
   const handlePay = async () => {
     try {
       const addr = ensureConnected(address);
       if (!signXDR) throw new Error('Wallet signer not available. Connect Freighter.');
       const amount = parseInt(payAmount, 10);
       if (isNaN(amount) || amount <= 0) throw new Error('Enter a valid amount greater than 0');
+      
+      if (billInfo && (billInfo.funded + amount > billInfo.target)) {
+         throw new Error(`Amount too high! Only ${billInfo.target - billInfo.funded} remaining.`);
+      }
 
       setStatus('loading');
-      setMessage('Submitting payment…');
+      setMessage('Submitting payment… please approve in wallet.');
       logAction('invokeWrite:pay', { payer: addr, amount });
 
       await invokeWrite('pay', addr, signXDR, [
@@ -100,7 +109,7 @@ const App: React.FC = () => {
       ]);
 
       setStatus('ok');
-      setMessage(`Paid ${amount} units`);
+      setMessage(`Successfully paid ${amount} units!`);
       setPayAmount('');
       logAction('invokeWrite:pay:ok', { amount });
 
@@ -122,7 +131,7 @@ const App: React.FC = () => {
       logAction('wallet:connect');
       await connect();
       setStatus('ok');
-      setMessage('Wallet connected');
+      setMessage('Wallet connected!');
       logAction('wallet:connect:ok');
     } catch (err) {
       const result = applyContractError(err);
@@ -140,6 +149,10 @@ const App: React.FC = () => {
 
   const isLoading = status === 'loading';
   const showSetup = status === 'setup';
+  
+  // Logic Booleans for UI sections
+  const hasBill = billInfo !== null;
+  const isSettled = billInfo?.settled === true;
 
   return (
     <div className="container">
@@ -148,6 +161,27 @@ const App: React.FC = () => {
         <h1>💸 KlassPay</h1>
         <p>Campus split billing for Filipino college students</p>
       </header>
+      
+      {/* Tutorial / Guide Section */}
+      {!address ? (
+        <div className="tutorial-banner">
+          <h3>Welcome to KlassPay! 👋</h3>
+          <p>This app lets you easily split bills with your classmates using the Stellar blockchain.</p>
+          <p><strong>Step 1:</strong> Connect your Freighter wallet to get started.</p>
+        </div>
+      ) : (
+        <div className="tutorial-banner">
+          {hasBill ? (
+            isSettled ? (
+              <p>🎉 <strong>Goal reached!</strong> This bill has been fully paid off.</p>
+            ) : (
+              <p>💰 <strong>Step 3: Pay Shares.</strong> A bill is currently active! Enter your contribution below to pay your share.</p>
+            )
+          ) : (
+            <p>📝 <strong>Step 2: Create a Bill.</strong> There are no active bills right now. Create one below to start collecting funds!</p>
+          )}
+        </div>
+      )}
 
       {/* Status Badge */}
       <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
@@ -195,63 +229,67 @@ const App: React.FC = () => {
       )}
 
       {/* ── Create Bill Section ── */}
-      {/* Maps to: create(organizer: Address, amount: u32) — write */}
-      <div className="card">
-        <h2><span className="icon">📝</span> Create Bill</h2>
-        <div className="field-group">
-          <input
-            id="input-create-amount"
-            className="input"
-            type="number"
-            min="1"
-            placeholder="Target amount (u32)"
-            value={createAmount}
-            onChange={(e) => setCreateAmount(e.target.value)}
-            disabled={isLoading}
-          />
+      {address && !hasBill && !showSetup && (
+        <div className="card">
+          <h2><span className="icon">📝</span> Create a New Bill</h2>
+          <p className="helper-text">Set the total amount you need to collect from the group.</p>
+          <div className="field-group">
+            <input
+              id="input-create-amount"
+              className="input"
+              type="number"
+              min="1"
+              placeholder="e.g. 5000"
+              value={createAmount}
+              onChange={(e) => setCreateAmount(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <button
+            id="btn-create-bill"
+            className="btn"
+            onClick={handleCreate}
+            disabled={isLoading || !address || !contractId}
+          >
+            {isLoading ? '⏳ Processing…' : 'Create Bill'}
+          </button>
         </div>
-        <button
-          id="btn-create-bill"
-          className="btn"
-          onClick={handleCreate}
-          disabled={isLoading || !address || !contractId}
-        >
-          {isLoading ? '⏳ Processing…' : 'Create Bill'}
-        </button>
-      </div>
+      )}
 
       {/* ── Pay Share Section ── */}
-      {/* Maps to: pay(payer: Address, amount: u32) — write */}
-      <div className="card">
-        <h2><span className="icon">💰</span> Pay Share</h2>
-        <div className="field-group">
-          <input
-            id="input-pay-amount"
-            className="input"
-            type="number"
-            min="1"
-            placeholder="Payment amount (u32)"
-            value={payAmount}
-            onChange={(e) => setPayAmount(e.target.value)}
-            disabled={isLoading}
-          />
+      {address && hasBill && !isSettled && (
+        <div className="card">
+          <h2><span className="icon">💰</span> Pay Your Share</h2>
+          <p className="helper-text">Enter the amount you want to contribute. Only {billInfo!.target - billInfo!.funded} units left!</p>
+          <div className="field-group">
+            <input
+              id="input-pay-amount"
+              className="input"
+              type="number"
+              min="1"
+              max={billInfo!.target - billInfo!.funded}
+              placeholder={`Remaining: ${billInfo!.target - billInfo!.funded}`}
+              value={payAmount}
+              onChange={(e) => setPayAmount(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <button
+            id="btn-pay-share"
+            className="btn btn--secondary"
+            onClick={handlePay}
+            disabled={isLoading || !address || !contractId}
+          >
+            {isLoading ? '⏳ Processing…' : 'Pay Share'}
+          </button>
         </div>
-        <button
-          id="btn-pay-share"
-          className="btn btn--secondary"
-          onClick={handlePay}
-          disabled={isLoading || !address || !contractId}
-        >
-          {isLoading ? '⏳ Processing…' : 'Pay Share'}
-        </button>
-      </div>
+      )}
 
       {/* ── Bill Status Section ── */}
-      {/* Maps to: get() -> BillInfo { organizer, target, funded, settled, payers } — read */}
-      <div className="card">
-        <h2>
-          <span className="icon">📊</span> Bill Status
-          {billInfo && (
+      {hasBill && (
+        <div className="card">
+          <h2>
+            <span className="icon">📊</span> Bill Status
             <button
               id="btn-refresh-bill"
               className="btn"
@@ -266,10 +304,8 @@ const App: React.FC = () => {
             >
               ↻ Refresh
             </button>
-          )}
-        </h2>
+          </h2>
 
-        {billInfo ? (
           <>
             <table className="bill-table">
               <tbody>
@@ -327,14 +363,8 @@ const App: React.FC = () => {
               <p className="empty-state">No payments yet</p>
             )}
           </>
-        ) : (
-          <p className="empty-state">
-            {contractId
-              ? 'No bill data loaded. Create a bill or refresh.'
-              : 'Set VITE_CONTRACT_ID to view bill status.'}
-          </p>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Message */}
       {message && (
