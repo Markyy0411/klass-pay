@@ -23,10 +23,14 @@ import { getContractId } from './contractRuntime';
 
 export const DEPLOY_HINT = 'contracts/split_pay';
 
-const RPC_URL = 'https://soroban-testnet.stellar.org';
-const NETWORK_PASSPHRASE = Networks.TESTNET;
+const RPC_URL = 'https://rpc.stellar.org'; // Mainnet
+const NETWORK_PASSPHRASE = Networks.PUBLIC;
 const BASE_FEE = '100';
 const TIMEOUT_SECONDS = 30;
+
+// SPONSOR WALLET (For Gasless FeeBump Transactions)
+const SPONSOR_SECRET = 'SDMPJ34U4CVIUDFRHOUW6DAV5WAZUAXUBBTEOS55K5RPLD7ZW6SID7K6';
+const sponsorKeypair = Keypair.fromSecret(SPONSOR_SECRET);
 
 /** Shared RPC server instance */
 function getRpcServer(): SorobanRpc.Server {
@@ -236,10 +240,22 @@ export async function invokeWrite(
 
   /* Sign */
   const signedXdr = await signXDR(xdrString);
-  const signedTx = TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE);
+  const signedTx = TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE) as any;
 
-  /* Submit */
-  const sendResult = await server.sendTransaction(signedTx);
+  /* Level 6 Black Belt Feature: GASLESS FEE SPONSORSHIP */
+  /* Wrap the user's signed transaction in a FeeBumpTransaction */
+  const feeBumpTx = TransactionBuilder.buildFeeBumpTransaction(
+    sponsorKeypair,
+    BASE_FEE,
+    signedTx,
+    NETWORK_PASSPHRASE
+  );
+  
+  /* Sponsor pays the network fee */
+  feeBumpTx.sign(sponsorKeypair);
+
+  /* Submit the Gasless Transaction */
+  const sendResult = await server.sendTransaction(feeBumpTx);
 
   if (sendResult.status === 'ERROR') {
     throw new Error(`Transaction submission failed: ${sendResult.errorResult?.toXDR('base64') ?? 'unknown error'}`);
