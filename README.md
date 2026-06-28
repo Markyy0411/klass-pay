@@ -19,6 +19,12 @@ KlassPay solves a massive problem for university students: the awkward, stressfu
 - **Automated Settlement & GCash Offramp:** Once the target goal is met, the contract is automatically marked as "Settled", and the Organizer gets access to a one-click button to withdraw their XLM directly into their GCash account.
 - **Sleek UI/UX:** Built with React, Vite, and completely modern styling (Toast Notifications, Glassmorphism, CSS Variables).
 
+## 🗣️ User Feedback Iteration Summary
+Based on feedback from our initial pilot users, we made several critical iterations:
+1. **The GCash Offramp:** Initially, organizers didn't know what to do with XLM once collected. Users demanded a way to convert to local fiat. We added the **"Withdraw to GCash"** button so organizers can instantly offramp their funds upon goal completion.
+2. **Visual Feedback:** Payers were confused if their payment went through. We implemented **Toast Notifications** and a live-updating Progress Bar to give instant confirmation of successful blockchain transactions.
+3. **Shareability:** Users didn't want to explain how to find the bill. We added a **Copy Link** button that generates a direct URL (e.g., `/?bill=123456`) that auto-loads the specific bill for friends to pay immediately.
+
 ---
 
 ## 🚀 How to Run Locally
