@@ -22,6 +22,10 @@ KlassPay solves a massive problem for university students: the awkward, stressfu
 ## 🏆 Level 6: Mainnet & Black Belt Phase
 KlassPay has officially upgraded to Stellar Mainnet! 
 
+### 🔗 Mainnet Contract Addresses
+- **KlassPay Smart Contract:** `CDQVUENXMPWVLDOJKAW7U3VHDOCMACBIUC7ESTIDIJXEOB4TOKT4KXOE`
+- **Fee Sponsor Wallet (Gasless Payer):** `GATNUOK4FKUSLNDKUY2S5ZJ6ERUSFFICQFVIUQPUKFMG5236BHA5PF3S`
+
 ### 🥋 Black Belt Feature: Gasless Transactions (Fee Sponsorship)
 We implemented a **Fee Sponsorship** model using `FeeBumpTransaction`. When users pay their share of a bill, a background Sponsor Wallet automatically pays the Stellar network gas fees for them. This creates a completely frictionless, gasless experience for the end user!
 
