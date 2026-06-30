@@ -49,6 +49,7 @@ Based on further feedback, we continued to polish the product for a broader laun
 1. **[NEW] Dark/Light Mode Toggle:** A fully responsive theme switcher for improved accessibility.
 2. **[NEW] CSV Exports:** Organizers can now click "Export CSV" to instantly download a spreadsheet of all the wallet addresses that contributed to their bill, making off-chain record-keeping seamless.
 3. **Growth Report:** Read our complete [Monthly Growth Report](./monthly_growth_report.md)
+4. **Product Update Post:** [View on X/Twitter](https://x.com/eyyowitsmark/status/2071964990886883653?s=20)
 
 ---
 
