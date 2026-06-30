@@ -15,6 +15,14 @@
   --error: #ef4444;
 }
 
+[data-theme="light"] {
+  --bg-color: #f8fafc;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.1);
+}
+
 body {
   margin: 0;
   font-family: 'Outfit', sans-serif;
@@ -106,7 +114,7 @@ body {
   width: 100%;
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  color: var(--text-main);
   padding: 1rem;
   border-radius: 12px;
   font-size: 1rem;
@@ -190,7 +198,7 @@ body {
 .wallet-bar__label { color: var(--text-muted); font-weight: 500; }
 .wallet-bar__address { 
   font-family: monospace; 
-  color: #e2e8f0; 
+  color: var(--text-main); 
   font-weight: 600; 
   background: rgba(139, 92, 246, 0.25); 
   padding: 0.4rem 0.75rem; 
@@ -240,7 +248,7 @@ body {
 .bill-table td:last-child {
   text-align: right;
   font-weight: 600;
-  color: white;
+  color: var(--text-main);
 }
 
 .progress-bar {
@@ -272,6 +280,6 @@ body {
   margin-bottom: 0.5rem;
   border-radius: 8px;
   font-family: monospace;
-  color: #e2e8f0;
+  color: var(--text-main);
   border: 1px solid var(--glass-border);
 }

@@ -14,6 +14,12 @@ export default function App() {
 
   const [currentBillId, setCurrentBillId] = useState<number | null>(initialBillId);
   const [bill, setBill] = useState<BillInfo | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
+  
+  useEffect(() => {
+    if (darkMode) document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+  }, [darkMode]);
   
   const [target, setTarget] = useState(100);
   const [payAmount, setPayAmount] = useState(10);
@@ -121,7 +127,13 @@ export default function App() {
 
   return (
     <div className="container">
-      <div className="header">
+      <div className="header" style={{ position: 'relative' }}>
+        <button 
+          onClick={() => setDarkMode(!darkMode)} 
+          style={{ position: 'absolute', top: 0, right: 0, background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+        >
+          {darkMode ? '🌙' : '☀️'}
+        </button>
         <h1 onClick={goHome} style={{cursor: 'pointer'}}>💸 KlassPay</h1>
         <p>The premium split-payment engine for students.</p>
       </div>
@@ -252,9 +264,26 @@ export default function App() {
                   </>
                 )}
 
-                <h3 style={{ marginTop: '2rem', marginBottom: '1rem', color: 'var(--text-muted)' }}>
-                  👥 Payers ({bill.payers.length})
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', marginBottom: '1rem' }}>
+                  <h3 style={{ margin: 0, color: 'var(--text-muted)' }}>👥 Payers ({bill.payers.length})</h3>
+                  {bill.payers.length > 0 && (
+                    <button 
+                      onClick={() => {
+                        const csvContent = "data:text/csv;charset=utf-8,Wallet Address\n" + bill.payers.join("\n");
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", encodedUri);
+                        link.setAttribute("download", `bill_${currentBillId}_payers.csv`);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }} 
+                      style={{ background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', padding: '0.3rem 0.8rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      📥 Export CSV
+                    </button>
+                  )}
+                </div>
                 <ul className="payer-list">
                   {bill.payers.map((p, i) => (
                     <li key={i}>{p.substring(0, 12)}...{p.slice(-12)}</li>
