@@ -6,6 +6,9 @@
 **Pitch Deck:** [View on Canva](https://canva.link/au4fo5k0t0do5ew)
 **Demo Video:** [Watch on Loom](https://www.loom.com/share/2e5c2070d6094b3485ec7c5757279aba)
 **User Feedback Data:** [Google Sheets (Real User Data)](https://docs.google.com/spreadsheets/d/1wVUU7dA9LYpTh3xD6160iHV0KXrAzl-5a9QBc02mbXk/edit?usp=sharing)
+**Community Contribution (Blog):** [Read on Dev.to](https://dev.to/markyy0411/building-klasspay-a-gasless-split-payment-engine-on-stellar-soroban-85p)
+**Twitter Launch Post:** [View on X/Twitter](https://x.com/eyyowitsmark/status/2071961241040646601?s=20)
+**Transaction Activity Proof:** [View on Stellar Expert](https://stellar.expert/explorer/public/contract/CDQVUENXMPWVLDOJKAW7U3VHDOCMACBIUC7ESTIDIJXEOB4TOKT4KXOE)
 
 ---
 
