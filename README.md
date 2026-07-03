@@ -8,7 +8,7 @@
 **User Feedback Data:** [Google Sheets (Real User Data)](https://docs.google.com/spreadsheets/d/1wVUU7dA9LYpTh3xD6160iHV0KXrAzl-5a9QBc02mbXk/edit?usp=sharing)
 **Community Contribution (Blog):** [Read on Dev.to](https://dev.to/markyy0411/building-klasspay-a-gasless-split-payment-engine-on-stellar-soroban-85p)
 **Twitter Launch Post:** [View on X/Twitter](https://x.com/eyyowitsmark/status/2071961241040646601?s=20)
-**Transaction Activity Proof:** [View on Stellar Expert](https://stellar.expert/explorer/public/contract/CDQVUENXMPWVLDOJKAW7U3VHDOCMACBIUC7ESTIDIJXEOB4TOKT4KXOE)
+**Transaction Activity Proof:** [View on Stellar Expert](https://stellar.expert/explorer/public/contract/CDQVUENXMPWVLDOJKAW7U3VHDOCMACBIUC7E5TIDIJXEOB4TOKT4KXOE)
 
 ---
 
@@ -26,7 +26,7 @@ KlassPay solves a massive problem for university students: the awkward, stressfu
 KlassPay has officially upgraded to Stellar Mainnet! 
 
 ### 🔗 Mainnet Contract Addresses
-- **KlassPay Smart Contract:** `CDQVUENXMPWVLDOJKAW7U3VHDOCMACBIUC7ESTIDIJXEOB4TOKT4KXOE`
+- **KlassPay Smart Contract:** `CDQVUENXMPWVLDOJKAW7U3VHDOCMACBIUC7E5TIDIJXEOB4TOKT4KXOE`
 - **Fee Sponsor Wallet (Gasless Payer):** `GATNUOK4FKUSLNDKUY2S5ZJ6ERUSFFICQFVIUQPUKFMG5236BHA5PF3S`
 
 ### 🥋 Black Belt Feature: Gasless Transactions (Fee Sponsorship)
