@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from './wallet';
 import { simulate, invokeWrite, BillInfo } from './sorobanClient';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function App() {
   // FIXED: Destructure the correct variables from wallet.ts
@@ -16,6 +17,10 @@ export default function App() {
   const [bill, setBill] = useState<BillInfo | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   
+  // GCash Simulation State
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawStep, setWithdrawStep] = useState(0);
+
   useEffect(() => {
     if (darkMode) document.documentElement.setAttribute('data-theme', 'light');
     else document.documentElement.removeAttribute('data-theme');
@@ -125,6 +130,17 @@ export default function App() {
     window.history.pushState({}, '', '/');
   };
 
+  const handleWithdraw = () => {
+    setIsWithdrawing(true);
+    setWithdrawStep(1);
+    setTimeout(() => setWithdrawStep(2), 2000);
+    setTimeout(() => setWithdrawStep(3), 4500);
+    setTimeout(() => {
+      setWithdrawStep(4);
+      setTimeout(() => setIsWithdrawing(false), 3000);
+    }, 6500);
+  };
+
   return (
     <div className="container">
       <div className="header" style={{ position: 'relative' }}>
@@ -213,7 +229,7 @@ export default function App() {
                     <div className="msg msg--ok" style={{ background: 'linear-gradient(90deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))', border: '1px solid var(--success)'}}>
                       🎉 <strong>Goal reached!</strong> This bill has been fully paid off.
                     </div>
-                      <button className="btn" style={{ background: '#005CEE' }} onClick={() => alert(`Withdrawal initiated! ${bill.target} XLM will arrive in your GCash account shortly.`)}>
+                      <button className="btn" style={{ background: '#005CEE' }} onClick={handleWithdraw}>
                         📱 Withdraw {bill.target} XLM to GCash
                       </button>
                   </div>
@@ -323,6 +339,70 @@ export default function App() {
           {toastMsg}
         </div>
       )}
+
+      <AnimatePresence>
+        {isWithdrawing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.8)',
+              backdropFilter: 'blur(10px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              style={{
+                background: 'var(--card-bg)',
+                padding: '3rem',
+                borderRadius: '24px',
+                textAlign: 'center',
+                maxWidth: '400px',
+                width: '90%',
+                border: '1px solid var(--glass-border)'
+              }}
+            >
+              {withdrawStep === 1 && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔗</div>
+                  <h3>Anchoring to SEP-24...</h3>
+                  <p style={{ color: 'var(--text-muted)' }}>Connecting Stellar Mainnet to local fiat rails.</p>
+                </motion.div>
+              )}
+              {withdrawStep === 2 && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💱</div>
+                  <h3>Converting XLM to PHP...</h3>
+                  <p style={{ color: 'var(--text-muted)' }}>Executing path payment at best rate.</p>
+                </motion.div>
+              )}
+              {withdrawStep === 3 && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📱</div>
+                  <h3>Disbursing to GCash...</h3>
+                  <p style={{ color: 'var(--text-muted)' }}>Sending funds to registered mobile number.</p>
+                </motion.div>
+              )}
+              {withdrawStep === 4 && (
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
+                  <h3 style={{ color: 'var(--success)' }}>Transfer Complete!</h3>
+                  <p style={{ color: 'var(--text-muted)' }}>Check your GCash app.</p>
+                </motion.div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
