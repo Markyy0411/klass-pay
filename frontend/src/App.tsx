@@ -80,8 +80,8 @@ export default function App() {
       const newBillId = Math.floor(100000 + Math.random() * 900000);
       
       const args = [
+        { value: address, type: 'address' },
         { value: newBillId, type: 'u32' },
-        { value: target, type: 'u32' },
       ];
       
       // FIXED: Use signXDR from useWallet()
@@ -104,8 +104,8 @@ export default function App() {
     setError(null);
     try {
       const args = [
+        { value: address, type: 'address' },
         { value: currentBillId, type: 'u32' },
-        { value: payAmount, type: 'u32' },
       ];
       
       // FIXED: Use signXDR from useWallet()
