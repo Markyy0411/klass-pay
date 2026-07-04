@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Wallet, Zap, Shield, ChevronRight } from 'lucide-react';
+import { Wallet, Zap, Shield, ChevronRight, AlertTriangle, CheckCircle, MessageSquare } from 'lucide-react';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -19,11 +19,12 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '2rem', textAlign: 'center' }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
+          style={{ marginTop: '2rem' }}
         >
           <div style={{ display: 'inline-block', padding: '0.3rem 1rem', background: 'rgba(124, 58, 237, 0.1)', color: 'var(--primary)', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 600, marginBottom: '1.5rem' }}>
             Built for APAC Stellar Hackathon
@@ -76,6 +77,94 @@ export default function Landing() {
             </p>
           </div>
         </motion.div>
+
+        {/* The Problem Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          style={{ width: '100%', maxWidth: '1000px', marginTop: '8rem', textAlign: 'left' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <AlertTriangle size={36} color="#EF4444" />
+            <h2 style={{ fontSize: '2.5rem', margin: 0 }}>The Problem</h2>
+          </div>
+          <div className="card" style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', lineHeight: 1.8, marginBottom: '1rem' }}>
+              Collecting money for group projects, trips, or class funds is a nightmare. 
+            </p>
+            <ul style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.8, paddingLeft: '1.5rem', margin: 0 }}>
+              <li><strong>The Awkwardness:</strong> Constantly reminding friends to pay you back ruins relationships.</li>
+              <li><strong>The Mess:</strong> Tracking who paid via messy spreadsheets leads to lost funds and confusion.</li>
+              <li><strong>The Crypto Friction:</strong> Traditional Web3 payment splits force non-crypto native friends to figure out how to buy native tokens just to pay for network gas fees.</li>
+            </ul>
+          </div>
+        </motion.div>
+
+        {/* The Solution Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          style={{ width: '100%', maxWidth: '1000px', marginTop: '6rem', textAlign: 'left' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <CheckCircle size={36} color="#10B981" />
+            <h2 style={{ fontSize: '2.5rem', margin: 0 }}>The KlassPay Solution</h2>
+          </div>
+          <div className="card" style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+            <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', lineHeight: 1.8, marginBottom: '1rem' }}>
+              We rebuilt split-payments from the ground up on the Stellar network to be entirely trustless and frictionless.
+            </p>
+            <ul style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.8, paddingLeft: '1.5rem', margin: 0 }}>
+              <li><strong>Instant Bill Creation:</strong> One click deploys a dedicated Soroban smart contract to securely hold the group's funds.</li>
+              <li><strong>Transparent Tracking:</strong> Everyone sees exactly who paid and what percentage of the goal is funded directly on-chain.</li>
+              <li><strong>100% Gasless:</strong> Thanks to FeeBumpTransactions, your friends just click "Pay" and the network fees are magically sponsored by the protocol.</li>
+            </ul>
+          </div>
+        </motion.div>
+
+        {/* Contact Us Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          style={{ width: '100%', maxWidth: '600px', marginTop: '8rem', marginBottom: '4rem', textAlign: 'center' }}
+        >
+          <div style={{ display: 'inline-block', padding: '1rem', background: 'var(--glass-bg)', borderRadius: '50%', marginBottom: '1rem' }}>
+            <MessageSquare size={32} color="var(--primary)" />
+          </div>
+          <h2 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0' }}>Get in Touch</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginBottom: '2rem' }}>
+            Have feedback, found a bug, or want to integrate KlassPay? We'd love to hear from you.
+          </p>
+          
+          <form className="card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--glass-bg)' }} onSubmit={(e) => e.preventDefault()}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Name</label>
+              <input type="text" placeholder="John Doe" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text)' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Email</label>
+              <input type="email" placeholder="john@example.com" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text)' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Message</label>
+              <textarea placeholder="How can we help?" rows={4} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text)', resize: 'vertical' }} />
+            </div>
+            <button type="submit" className="btn" style={{ width: '100%', marginTop: '0.5rem', padding: '0.8rem' }}>
+              Send Message
+            </button>
+          </form>
+          
+          <div style={{ marginTop: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            Or follow us on <a href="#" style={{ color: 'var(--primary)' }}>Twitter</a> and <a href="#" style={{ color: 'var(--primary)' }}>Discord</a>
+          </div>
+        </motion.div>
+
       </main>
     </div>
   );
