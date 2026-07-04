@@ -58,7 +58,7 @@ export default function App() {
   const handleGetBill = async (id: number) => {
     if (!address) return;
     try {
-      const b = await simulate('get', address, [{ value: id, type: 'u32' }]);
+      const b = await simulate('get', address, []);
       setBill(b);
       setError(null);
     } catch (e: any) {
@@ -81,7 +81,7 @@ export default function App() {
       
       const args = [
         { value: address, type: 'address' },
-        { value: newBillId, type: 'u32' },
+        { value: target, type: 'u32' },
       ];
       
       // FIXED: Use signXDR from useWallet()
@@ -105,7 +105,7 @@ export default function App() {
     try {
       const args = [
         { value: address, type: 'address' },
-        { value: currentBillId, type: 'u32' },
+        { value: payAmount, type: 'u32' },
       ];
       
       // FIXED: Use signXDR from useWallet()
