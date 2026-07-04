@@ -1,10 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Wallet, Zap, Shield, ChevronRight, AlertTriangle, CheckCircle, MessageSquare } from 'lucide-react';
 
 export default function Landing() {
   const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({ Name: '', Email: '', Message: '' });
+  const [status, setStatus] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('Sending...');
+    
+    try {
+      const url = 'https://script.google.com/macros/s/AKfycbxBhXHyJt1_oh2KXvnNrasHn19CKDU9MTSlnVltZAeS__gZCwsB_YCsBD1uwhqyAKtP/exec';
+      const formBody = new URLSearchParams();
+      formBody.append('Name', formData.Name);
+      formBody.append('Email', formData.Email);
+      formBody.append('Message', formData.Message);
+
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formBody.toString(),
+      });
+      
+      setStatus('Message Sent!');
+      setFormData({ Name: '', Email: '', Message: '' });
+      setTimeout(() => setStatus(''), 3000);
+    } catch (err) {
+      console.error(err);
+      setStatus('Error sending message.');
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -142,21 +173,21 @@ export default function Landing() {
             Have feedback, found a bug, or want to integrate KlassPay? We'd love to hear from you.
           </p>
           
-          <form className="card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--glass-bg)' }} onSubmit={(e) => e.preventDefault()}>
+          <form className="card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--glass-bg)' }} onSubmit={handleSubmit}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Name</label>
-              <input type="text" placeholder="John Doe" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text)' }} />
+              <input type="text" value={formData.Name} onChange={e => setFormData({...formData, Name: e.target.value})} required placeholder="John Doe" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text)' }} />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Email</label>
-              <input type="email" placeholder="john@example.com" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text)' }} />
+              <input type="email" value={formData.Email} onChange={e => setFormData({...formData, Email: e.target.value})} required placeholder="john@example.com" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text)' }} />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Message</label>
-              <textarea placeholder="How can we help?" rows={4} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text)', resize: 'vertical' }} />
+              <textarea placeholder="How can we help?" value={formData.Message} onChange={e => setFormData({...formData, Message: e.target.value})} required rows={4} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text)', resize: 'vertical' }} />
             </div>
-            <button type="submit" className="btn" style={{ width: '100%', marginTop: '0.5rem', padding: '0.8rem' }}>
-              Send Message
+            <button type="submit" disabled={status === 'Sending...'} className="btn" style={{ width: '100%', marginTop: '0.5rem', padding: '0.8rem' }}>
+              {status || 'Send Message'}
             </button>
           </form>
           
