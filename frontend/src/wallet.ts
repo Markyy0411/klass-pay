@@ -11,12 +11,15 @@ interface WalletState {
   signXDR: ((xdr: string) => Promise<string>) | null;
   connect: () => Promise<void>;
   connecting: boolean;
+  network: string | null;
 }
 
 export function useWallet(): WalletState {
   const [address, setAddress] = useState<string | null>(null);
   const [signFn, setSignFn] = useState<((xdr: string) => Promise<string>) | null>(null);
   const [connecting, setConnecting] = useState(false);
+
+  const [network, setNetwork] = useState<string | null>(null);
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
@@ -33,11 +36,38 @@ export function useWallet(): WalletState {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  useEffect(() => {
+    const fetchNetwork = async () => {
+      try {
+        if (await freighterApi.isConnected()) {
+          const net = await freighterApi.getNetworkDetails();
+          setNetwork(net.network);
+        }
+      } catch (e) {
+        // Ignore
+      }
+    };
+    if (address) {
+      fetchNetwork();
+    }
+  }, [address]);
+
    /* Freighter signTransaction wrapper */
   const freighterSign = useCallback(async (xdr: string): Promise<string> => {
+    let activeNetwork = 'PUBLIC';
+    let passphrase = 'Public Global Stellar Network ; September 2015';
+    
+    try {
+      const net = await freighterApi.getNetworkDetails();
+      if (net.network === 'TESTNET') {
+        activeNetwork = 'TESTNET';
+        passphrase = 'Test SDF Network ; September 2015';
+      }
+    } catch(e) {}
+
     const result = await freighterApi.signTransaction(xdr, {
-      network: 'TESTNET',
-      networkPassphrase: 'Test SDF Network ; September 2015',
+      network: activeNetwork,
+      networkPassphrase: passphrase,
     } as any);
 
     if (typeof result === 'string') {
@@ -47,7 +77,6 @@ export function useWallet(): WalletState {
     
     if (typeof result === 'object' && result !== null) {
       if ('error' in result && (result as any).error) {
-        // FIX: Extract the actual message instead of printing [object Object]
         const errObj = (result as any).error;
         const msg = typeof errObj === 'string' ? errObj : (errObj.message || "Transaction declined");
         throw new Error(msg);
@@ -111,10 +140,13 @@ export function useWallet(): WalletState {
     }
   }, [address, signFn, freighterSign]);
 
+  // ... earlier code ...
+
   return {
     address,
     signXDR: signFn,
     connect,
     connecting,
+    network,
   };
 }

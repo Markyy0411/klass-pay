@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function App() {
   // FIXED: Destructure the correct variables from wallet.ts
-  const { address, connect, signXDR } = useWallet();
+  const { address, connect, signXDR, network } = useWallet();
   const isConnected = !!address;
 
   // Read ?bill=1234 from URL
@@ -44,6 +44,15 @@ export default function App() {
     if (isConnected && address && currentBillId !== null) {
       handleGetBill(currentBillId);
     }
+  }, [isConnected, address, currentBillId]);
+
+  // Auto-refresh the current bill every 5 seconds
+  useEffect(() => {
+    if (!isConnected || !address || currentBillId === null) return;
+    const intervalId = setInterval(() => {
+      handleGetBill(currentBillId);
+    }, 5000);
+    return () => clearInterval(intervalId);
   }, [isConnected, address, currentBillId]);
 
   const handleGetBill = async (id: number) => {
@@ -166,6 +175,12 @@ export default function App() {
           </button>
         )}
       </div>
+
+      {isConnected && network === 'TESTNET' && (
+        <div className="msg msg--error" style={{ marginBottom: '1.5rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #EF4444' }}>
+          <strong>⚠️ Warning:</strong> Your wallet is connected to TESTNET. Please switch Freighter to <strong>MAINNET</strong> to use KlassPay.
+        </div>
+      )}
 
       {!isConnected && (
         <div className="card" style={{ textAlign: 'center' }}>
