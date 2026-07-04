@@ -3,6 +3,7 @@
 > **The premium split-payment engine for students.**
 
 **Live Demo URL:** [https://klass-pay.vercel.app/](https://klass-pay.vercel.app/)
+**Live Demo Contract ID (Testnet):** `CCFICKTKIXYLMDJXBDHSWRUR632ZIB22WAPDAKVQKG3YI6M7RMNCE2FE`
 **Pitch Deck:** [View on Canva](https://canva.link/au4fo5k0t0do5ew)
 **Demo Video:** [Watch on Loom](https://www.loom.com/share/2e5c2070d6094b3485ec7c5757279aba)
 **User Feedback Data:** [Google Sheets (Real User Data)](https://docs.google.com/spreadsheets/d/1wVUU7dA9LYpTh3xD6160iHV0KXrAzl-5a9QBc02mbXk/edit?usp=sharing)
