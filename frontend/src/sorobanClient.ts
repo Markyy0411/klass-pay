@@ -24,7 +24,7 @@ import { getContractId } from './contractRuntime';
 
 export const DEPLOY_HINT = 'contracts/split_pay';
 
-const RPC_URL = 'https://soroban-rpc.testnet.stellar.org';
+const RPC_URL = 'https://soroban-testnet.stellar.org';
 const NETWORK_PASSPHRASE = Networks.TESTNET;
 const BASE_FEE = '100';
 const TIMEOUT_SECONDS = 30;
