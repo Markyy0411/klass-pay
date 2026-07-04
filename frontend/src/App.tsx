@@ -176,9 +176,9 @@ export default function App() {
         )}
       </div>
 
-      {isConnected && network === 'TESTNET' && (
+      {isConnected && network === 'PUBLIC' && (
         <div className="msg msg--error" style={{ marginBottom: '1.5rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #EF4444' }}>
-          <strong>⚠️ Warning:</strong> Your wallet is connected to TESTNET. Please switch Freighter to <strong>MAINNET</strong> to use KlassPay.
+          <strong>⚠️ Warning:</strong> Your wallet is connected to MAINNET. Please switch Freighter to <strong>TESTNET</strong> to use KlassPay.
         </div>
       )}
 
