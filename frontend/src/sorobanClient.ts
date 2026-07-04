@@ -18,6 +18,7 @@ import {
   xdr,
   Keypair,
   Account,
+  Horizon,
 } from '@stellar/stellar-sdk';
 import { getContractId } from './contractRuntime';
 
@@ -172,7 +173,9 @@ export async function simulate(
   const contract = new Contract(contractId);
 
   const scArgs = buildArgs(method, args);
-  const account = await server.getAccount(source).catch(() => {
+  
+  const horizonServer = new Horizon.Server('https://horizon-testnet.stellar.org');
+  const account = await horizonServer.loadAccount(source).catch(() => {
     /* If account doesn't exist on-chain yet, build a zero-sequence stub */
     return new Account(source, '0');
   });
@@ -218,7 +221,10 @@ export async function invokeWrite(
   const contract = new Contract(contractId);
 
   const scArgs = buildArgs(method, args);
-  const account = await server.getAccount(source);
+  
+  // Use Horizon to fetch account (Soroban RPC testnet sometimes throws Account not found)
+  const horizonServer = new Horizon.Server('https://horizon-testnet.stellar.org');
+  const account = await horizonServer.loadAccount(source);
 
   const tx = new TransactionBuilder(account, {
     fee: BASE_FEE,
