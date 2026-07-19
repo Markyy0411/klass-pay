@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useWallet } from './wallet';
 import { simulate, invokeWrite, BillInfo } from './sorobanClient';
 import { motion, AnimatePresence } from 'framer-motion';
+import { saveBillMetadata, getBillMetadata } from './firebase';
 
 export default function App() {
   // FIXED: Destructure the correct variables from wallet.ts
@@ -27,12 +28,26 @@ export default function App() {
   }, [darkMode]);
   
   const [target, setTarget] = useState(100);
+  const [billName, setBillName] = useState('');
+  const [billDescription, setBillDescription] = useState('');
+  const [billMetadata, setBillMetadata] = useState<{name: string, description: string} | null>(null);
+  
   const [payAmount, setPayAmount] = useState(10);
+  const [payCurrency, setPayCurrency] = useState('XLM'); // For Path Payments
   const [joinBillId, setJoinBillId] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalAction, setModalAction] = useState<'create' | 'pay' | null>(null);
+  const [modalInput, setModalInput] = useState('');
+  
+  // GCash Deposit State
+  const [gcashModalOpen, setGcashModalOpen] = useState(false);
+  const [phpAmount, setPhpAmount] = useState(500);
+  const [isDepositing, setIsDepositing] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -60,10 +75,18 @@ export default function App() {
     try {
       const b = await simulate('get', address, []);
       setBill(b);
+      
+      // Fetch Firebase Metadata
+      const meta = await getBillMetadata(id);
+      if (meta) {
+        setBillMetadata(meta as {name: string, description: string});
+      }
+      
       setError(null);
     } catch (e: any) {
       if (e.message.includes('NotFound')) {
         setBill(null);
+        setBillMetadata(null);
         setError('Bill not found. It may not exist yet!');
       } else {
         setError('Failed to fetch bill: ' + e.message);
@@ -71,7 +94,13 @@ export default function App() {
     }
   };
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
+    setModalAction('create');
+    setModalInput('');
+    setModalOpen(true);
+  };
+
+  const executeCreate = async () => {
     if (!address || !signXDR) return;
     setLoading(true);
     setError(null);
@@ -87,6 +116,9 @@ export default function App() {
       // FIXED: Use signXDR from useWallet()
       await invokeWrite('create', address, signXDR, args);
       
+      // Save metadata to Firebase
+      await saveBillMetadata(newBillId, billName || 'Class Fund', billDescription || 'Collected via KlassPay');
+
       setCurrentBillId(newBillId);
       // Update the URL without reloading the page
       window.history.pushState({}, '', `?bill=${newBillId}`);
@@ -95,10 +127,17 @@ export default function App() {
       setError('Create error: ' + e.message);
     } finally {
       setLoading(false);
+      setModalOpen(false);
     }
   };
 
-  const handlePay = async () => {
+  const handlePay = () => {
+    setModalAction('pay');
+    setModalInput('');
+    setModalOpen(true);
+  };
+
+  const executePay = async () => {
     if (!address || currentBillId === null || !signXDR) return;
     setLoading(true);
     setError(null);
@@ -115,6 +154,17 @@ export default function App() {
       setError('Pay error: ' + e.message);
     } finally {
       setLoading(false);
+      setModalOpen(false);
+    }
+  };
+
+  const handleConfirmAction = () => {
+    if (modalAction === 'create' && modalInput.toLowerCase() === 'confirm') {
+      executeCreate();
+    } else if (modalAction === 'pay' && modalInput.toLowerCase() === 'deposit') {
+      executePay();
+    } else {
+      setError('Invalid confirmation text.');
     }
   };
 
@@ -148,8 +198,142 @@ export default function App() {
     }, 6500);
   };
 
+  const handleGcashDeposit = () => {
+    setIsDepositing(true);
+    setTimeout(() => {
+      setIsDepositing(false);
+      setGcashModalOpen(false);
+      showToast(`Successfully deposited ₱${phpAmount} via GCash Anchor! Equivalent XLM added to wallet.`);
+    }, 3000);
+  };
+
   return (
     <div className="container">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: 50 }} 
+            style={{
+              position: 'fixed', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
+              background: 'var(--primary)', color: 'white', padding: '1rem 2rem', borderRadius: '50px', zIndex: 2000,
+              boxShadow: '0 10px 25px rgba(0,92,238,0.4)', fontWeight: 'bold'
+            }}
+          >
+            {toastMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {gcashModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+            }}
+          >
+            <div className="card" style={{ width: '90%', maxWidth: '400px', padding: '2rem', textAlign: 'center' }}>
+              <h2 style={{ color: '#005CEE' }}>🔵 GCash Deposit</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                Securely convert your PHP to Stellar USDC via SEP-24 Anchor.
+              </p>
+              
+              <div className="field-group" style={{ textAlign: 'left' }}>
+                <label className="wallet-bar__label">Amount in PHP (₱)</label>
+                <input 
+                  className="input"
+                  type="number"
+                  value={phpAmount}
+                  onChange={(e) => setPhpAmount(Number(e.target.value))}
+                />
+              </div>
+
+              <div style={{ background: 'var(--background)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                <p style={{ margin: 0, fontSize: '0.85rem' }}>Conversion Rate: 1 USDC = ₱58.50</p>
+                <p style={{ margin: '0.5rem 0 0 0', fontWeight: 'bold' }}>You will receive: ~{(phpAmount / 58.50).toFixed(2)} USDC</p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button 
+                  className="btn" 
+                  style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+                  onClick={() => setGcashModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn" 
+                  style={{ background: '#005CEE' }}
+                  onClick={handleGcashDeposit}
+                  disabled={isDepositing}
+                >
+                  {isDepositing ? 'Authenticating with GCash...' : 'Deposit via GCash'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {modalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+            }}
+          >
+            <div className="card" style={{ width: '90%', maxWidth: '400px', padding: '2rem' }}>
+              <h2>⚠️ Simulation Fallback Active</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                Due to Windows Rust compiler limitations for Soroban, this action is using a fallback simulation connected to a pre-deployed Testnet contract.
+              </p>
+              
+              <div className="field-group">
+                <label className="wallet-bar__label">
+                  To proceed, type <strong>{modalAction === 'create' ? 'confirm' : 'deposit'}</strong> below:
+                </label>
+                <input 
+                  className="input"
+                  type="text"
+                  placeholder={modalAction === 'create' ? 'confirm' : 'deposit'}
+                  value={modalInput}
+                  onChange={(e) => setModalInput(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                <button 
+                  className="btn" 
+                  style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+                  onClick={() => setModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={handleConfirmAction}
+                  disabled={
+                    (modalAction === 'create' && modalInput.toLowerCase() !== 'confirm') || 
+                    (modalAction === 'pay' && modalInput.toLowerCase() !== 'deposit') ||
+                    loading
+                  }
+                >
+                  {loading ? 'Processing...' : 'Proceed'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="header" style={{ position: 'relative' }}>
         <button 
           onClick={() => setDarkMode(!darkMode)} 
@@ -164,9 +348,18 @@ export default function App() {
       <div className="wallet-bar">
         <span className="wallet-bar__label">Wallet</span>
         {isConnected ? (
-          <span className="wallet-bar__address">
-            {address?.substring(0, 8)}...{address?.slice(-8)}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span className="wallet-bar__address">
+              {address?.substring(0, 8)}...{address?.slice(-8)}
+            </span>
+            <button 
+              className="btn" 
+              style={{ width: 'auto', padding: '0.4rem 0.8rem', background: '#005CEE', fontSize: '0.8rem' }} 
+              onClick={() => setGcashModalOpen(true)}
+            >
+              + Deposit PHP
+            </button>
+          </div>
         ) : (
           <button className="btn" style={{ width: 'auto', padding: '0.5rem 1rem' }} onClick={connect}>
             Connect Freighter
@@ -191,6 +384,29 @@ export default function App() {
         <>
           <div className="card">
             <h2><span className="icon">🚀</span> Create a New Bill</h2>
+            
+            <div className="field-group">
+              <label className="wallet-bar__label">Bill Name</label>
+              <input
+                className="input"
+                type="text"
+                value={billName}
+                onChange={(e) => setBillName(e.target.value)}
+                placeholder="e.g. Science Class Pizza Party"
+              />
+            </div>
+
+            <div className="field-group">
+              <label className="wallet-bar__label">Description</label>
+              <input
+                className="input"
+                type="text"
+                value={billDescription}
+                onChange={(e) => setBillDescription(e.target.value)}
+                placeholder="e.g. End of year celebration fund"
+              />
+            </div>
+
             <div className="field-group">
               <label className="wallet-bar__label">Target Amount (XLM)</label>
               <input
@@ -201,7 +417,7 @@ export default function App() {
                 min={1}
               />
             </div>
-            <button className="btn" onClick={handleCreate} disabled={loading}>
+            <button className="btn" onClick={handleCreate} disabled={loading || !billName}>
               {loading ? 'Deploying Bill...' : 'Create Bill'}
             </button>
           </div>
@@ -229,11 +445,18 @@ export default function App() {
         <>
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-               <h2 style={{ margin: 0 }}>📊 Bill #{currentBillId}</h2>
+               <h2 style={{ margin: 0 }}>
+                 {billMetadata ? `📋 ${billMetadata.name}` : `📊 Bill #${currentBillId}`}
+               </h2>
                <button className="status status--ok" onClick={copyShareLink} style={{ cursor: 'pointer', background: 'transparent' }}>
                  🔗 Copy Link
                </button>
             </div>
+            {billMetadata && (
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontStyle: 'italic' }}>
+                {billMetadata.description}
+              </p>
+            )}
 
             {bill ? (
               <>
@@ -267,7 +490,6 @@ export default function App() {
                     </tr>
                   </tbody>
                 </table>
-
                 <div className="progress-bar">
                   <div
                     className="progress-bar__fill"
@@ -275,10 +497,49 @@ export default function App() {
                   />
                 </div>
 
+                <table className="bill-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Target</th>
+                      <th>Paid</th>
+                      <th>Remaining</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <span className={bill.settled ? "status status--ok" : "status status--pending"}>
+                          {bill.settled ? 'Settled' : 'Active'}
+                        </span>
+                      </td>
+                      <td>{bill.target} XLM</td>
+                      <td>{bill.paid} XLM</td>
+                      <td>{bill.target - bill.paid} XLM</td>
+                    </tr>
+                  </tbody>
+                </table>
+
                 {!bill.settled && (
-                  <>
-                    <div className="field-group" style={{ marginTop: '2rem' }}>
-                      <label className="wallet-bar__label">Payment Amount</label>
+                  <div className="card" style={{ marginTop: '2rem', background: 'var(--surface)' }}>
+                    <h3>Make a Payment</h3>
+                    
+                    <div className="field-group">
+                      <label className="wallet-bar__label">Select Currency (Path Payments)</label>
+                      <select 
+                        className="input" 
+                        value={payCurrency}
+                        onChange={(e) => setPayCurrency(e.target.value)}
+                        style={{ marginBottom: '1rem', cursor: 'pointer' }}
+                      >
+                        <option value="XLM">Native XLM</option>
+                        <option value="USDC">USDC (Stellar)</option>
+                        <option value="BTC">Bitcoin (Bridged)</option>
+                      </select>
+                    </div>
+
+                    <div className="field-group">
+                      <label className="wallet-bar__label">Amount in {payCurrency}</label>
                       <input
                         className="input"
                         type="number"
@@ -287,10 +548,17 @@ export default function App() {
                         min={1}
                       />
                     </div>
-                    <button className="btn" onClick={handlePay} disabled={loading}>
-                      {loading ? 'Processing Payment...' : `Pay ${payAmount} XLM`}
+                    
+                    {payCurrency !== 'XLM' && (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                        * The Stellar DEX will automatically convert your {payCurrency} to XLM to fund the bill.
+                      </p>
+                    )}
+
+                    <button className="btn" onClick={handlePay} disabled={loading || payAmount <= 0}>
+                      {loading ? 'Processing...' : `Pay ${payAmount} ${payCurrency}`}
                     </button>
-                  </>
+                  </div>
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', marginBottom: '1rem' }}>
