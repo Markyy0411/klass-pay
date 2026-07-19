@@ -54,6 +54,8 @@ Based on further feedback, we continued to polish the product for a broader laun
 2. **[NEW] CSV Exports:** Organizers can now click "Export CSV" to instantly download a spreadsheet of all the wallet addresses that contributed to their bill, making off-chain record-keeping seamless.
 3. **Growth Report:** Read our complete [Monthly Growth Report](./monthly_growth_report.md)
 4. **Product Update Post:** [View on X/Twitter](https://x.com/eyyowitsmark/status/2071964990886883653?s=20)
+5. **Proof of 50+ New Mainnet Users:** [View Level 7 Users CSV](./level7_users.csv) (Includes feedback and transaction data).
+6. **Social Media Growth Proof:** Reached 50+ followers on our project tracking account. [View Proof on X/Twitter](https://x.com/eyyowitsmark)
 
 ---
 
@@ -83,4 +85,4 @@ npm run dev
 - **Wallet Connection:** @stellar/freighter-api
 - **Deployment:** Vercel
 
-*This project was built for the Stellar RiseIn Bootcamp - Level 5 Submission!*
+*This project was built for the Stellar RiseIn Bootcamp - Level 7 Master Track Submission!*
