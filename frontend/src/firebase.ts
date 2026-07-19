@@ -6,12 +6,12 @@ import { getFirestore, collection, doc, setDoc, getDoc, updateDoc } from "fireba
 // 2. Create a project and add a Web App
 // 3. Copy the config values here:
 const firebaseConfig = {
-  apiKey: "AIzaSyBwsRMn-S3TnpX3KIzVsBj4PkPhyHlU2dI",
-  authDomain: "klasspay-v2.firebaseapp.com",
-  projectId: "klasspay-v2",
-  storageBucket: "klasspay-v2.firebasestorage.app",
-  messagingSenderId: "818201195767",
-  appId: "1:818201195767:web:5708e99c5d0f3fa52dcff2"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
