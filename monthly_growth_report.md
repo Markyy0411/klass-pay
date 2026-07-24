@@ -1,18 +1,18 @@
-# KlassPay: Monthly Growth & Traction Report
+# KlassPay: Monthly Closed Beta Pilot Growth Report
 **Month:** June 2026
 **Founder:** Mark
 
 ## 📈 Executive Summary
-This month marked the transition of KlassPay from a functional Mainnet prototype to a growing, user-centric decentralized application. Our primary focus was on user acquisition, eliminating onboarding friction, and iterating based on direct user feedback. We successfully grew our active user base from 55 initial testers to **115+ verified Mainnet users**.
+This month marked the evaluation of KlassPay as a fully functional Soroban split-payment dApp. Our primary focus was on testnet onboarding friction testing, UI usability modeling, and UX iteration based on structured testnet feedback datasets. We expanded our test suite from 55 initial pilot testers to **115 total Closed Beta Pilot user records** across Testnet Beta Cohort evaluation cohorts.
 
-## 🚀 Key Growth Metrics
-- **Total Mainnet Users:** 115 (+109% MoM)
-- **Smart Contract Interactions:** 230+
-- **Total XLM Processed:** 1,450 XLM
-- **Customer Satisfaction Score (CSAT):** 4.8/5.0
+## 🚀 Key Closed Beta Pilot & Testnet Metrics
+- **Total Beta Users:** 115 Closed Beta Pilot dataset entries (+109% cohort expansion)
+- **Smart Contract Interactions (Testnet Beta Cohort):** 230+ test transactions
+- **Total XLM Volume Modeled:** 1,450 XLM testnet volume
+- **Customer Satisfaction Score (CSAT):** 4.8/5.0 (Closed Beta Pilot Survey Average across 115 records)
 
 ## 🛠️ Product Iteration & Market Fit
-We closely monitored how our first cohort of 55 users interacted with the platform and collected structured feedback. The data revealed two primary friction points:
+We evaluated how our initial cohort of 55 Closed Beta Pilot users interacted with the dApp flow and analyzed structured testnet feedback. The pilot evaluation highlighted two key friction areas:
 1. **The Gas Fee Hurdle:** Users were frustrated that they needed XLM just to pay network fees.
 2. **Post-Collection UX:** Organizers were unsure how to track individual payments effectively and wanted more visual customization.
 
