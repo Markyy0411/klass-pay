@@ -17,15 +17,15 @@ fn test_happy_path() {
     let (env, client) = setup();
     let organizer = Address::generate(&env);
 
-    client.create(&organizer, &100);
-    client.pay(&Address::generate(&env), &40);
+    client.create(&organizer, &1, &100);
+    client.pay(&Address::generate(&env), &1, &40);
 
-    let bill = client.get();
+    let bill = client.get(&1);
     assert_eq!(bill.organizer, organizer);
     assert_eq!(bill.target, 100);
     assert_eq!(bill.funded, 40);
     assert_eq!(bill.settled, false);
-    assert_eq!(bill.payers, 1);
+    assert_eq!(bill.payers.len(), 1);
 }
 
 #[test]
@@ -34,7 +34,7 @@ fn test_zero_amount_rejected() {
     let (env, client) = setup();
     let organizer = Address::generate(&env);
 
-    client.create(&organizer, &0);
+    client.create(&organizer, &1, &0);
 }
 
 #[test]
@@ -42,13 +42,13 @@ fn test_state_persists_two_pays() {
     let (env, client) = setup();
     let organizer = Address::generate(&env);
 
-    client.create(&organizer, &100);
-    client.pay(&Address::generate(&env), &30);
-    client.pay(&Address::generate(&env), &25);
+    client.create(&organizer, &2, &100);
+    client.pay(&Address::generate(&env), &2, &30);
+    client.pay(&Address::generate(&env), &2, &25);
 
-    let bill = client.get();
+    let bill = client.get(&2);
     assert_eq!(bill.funded, 55);
-    assert_eq!(bill.payers, 2);
+    assert_eq!(bill.payers.len(), 2);
     assert_eq!(bill.settled, false);
 }
 
@@ -58,8 +58,8 @@ fn test_overfunding_rejected() {
     let (env, client) = setup();
     let organizer = Address::generate(&env);
 
-    client.create(&organizer, &50);
-    client.pay(&Address::generate(&env), &51);
+    client.create(&organizer, &3, &50);
+    client.pay(&Address::generate(&env), &3, &51);
 }
 
 #[test]
@@ -68,12 +68,12 @@ fn test_cannot_pay_after_settled() {
     let (env, client) = setup();
     let organizer = Address::generate(&env);
 
-    client.create(&organizer, &10);
-    client.pay(&Address::generate(&env), &10);
+    client.create(&organizer, &4, &10);
+    client.pay(&Address::generate(&env), &4, &10);
 
-    let bill = client.get();
+    let bill = client.get(&4);
     assert_eq!(bill.settled, true);
 
     // This pay should fail because the bill is already settled
-    client.pay(&Address::generate(&env), &1);
-}
+    client.pay(&Address::generate(&env), &4, &1);
+}
